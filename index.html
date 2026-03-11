@@ -6,7 +6,10 @@
   <title>MJS Portal Editor</title>
 </head>
 <body>
-  <script src="/mjs.js"></script>
+  <script>
+    window.process = window.process || { env: { NODE_ENV: 'development' } };
+  </script>
+  <script src="/mjs/dist/mjs.js"></script>
   <div id="editor-root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
