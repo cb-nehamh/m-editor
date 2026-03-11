@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -8,15 +8,96 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { useSearchParams } from 'react-router-dom';
+import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
+import { motion, AnimatePresence } from 'framer-motion';
 import { EditorProvider, useEditor, type SavedEditorConfig } from './state';
 import { Sidebar } from './components/Sidebar';
 import { ConfigForm } from './components/ConfigForm';
 import { Preview } from './components/Preview';
 import { registryMap } from './component-registry';
+import { saveConfig, fetchConfig } from './api';
+
+const DEFAULT_DOMAIN = 'yash-pc2-test';
+
+function ZoomControls({ scale }: { scale: number }) {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  const pct = Math.round(scale * 100);
+
+  return (
+    <div className="floating-zoom-bar">
+      <button className="zoom-btn" onClick={() => zoomOut(0.2)} title="Zoom out">-</button>
+      <button
+        className="zoom-btn"
+        onClick={() => resetTransform()}
+        title="Reset zoom"
+        style={{ minWidth: '52px', fontSize: '11px', fontWeight: 700 }}
+      >
+        {pct}%
+      </button>
+      <button className="zoom-btn" onClick={() => zoomIn(0.2)} title="Zoom in">+</button>
+      <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.08)', margin: '0 2px' }} />
+      <button className="zoom-btn" onClick={() => resetTransform()} title="Fit to view" style={{ fontSize: '12px' }}>
+        &#x2922;
+      </button>
+    </div>
+  );
+}
 
 function EditorShell() {
   const { state, dispatch } = useEditor();
   const [draggedType, setDraggedType] = React.useState<string | null>(null);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [configStatus, setConfigStatus] = useState<'draft' | 'published'>('draft');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const canvasWrapperRef = useRef<any>(null);
+  const [canvasScale, setCanvasScale] = useState(0.85);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
+  const configId = searchParams.get('id') || '';
+
+  useEffect(() => {
+    if (!configId) return;
+    fetchConfig(domain, configId)
+      .then((res) => {
+        if (res) {
+          setConfigStatus((res.status as 'draft' | 'published') || 'draft');
+          const config = res.config as any;
+          if (config?.sections) {
+            dispatch({ type: 'LOAD_FULL', payload: { sections: config.sections } });
+          } else if (Array.isArray(config)) {
+            dispatch({ type: 'LOAD_CONFIG', payload: config });
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load config:', err);
+        showToast('Failed to load config');
+      });
+  }, [domain, configId]);
+
+  useEffect(() => {
+    if (state.selectedId && !rightOpen) setRightOpen(true);
+  }, [state.selectedId]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.key === 'l' || e.key === 'L') { e.preventDefault(); setLeftOpen((v) => !v); }
+      if (e.key === 'r' || e.key === 'R') { e.preventDefault(); setRightOpen((v) => !v); }
+      if (e.key === 'Escape') { dispatch({ type: 'SELECT', payload: null }); }
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [dispatch]);
+
+  function showToast(msg: string) {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -37,6 +118,7 @@ function EditorShell() {
       if (!def) return;
 
       const region = (e.over.data.current?.region as string) ?? 'main';
+      const sectionId = e.over.data.current?.sectionId as string | undefined;
 
       const id = `${type}-${Date.now()}`;
       const defaultVariant = def.variants?.[0]?.value;
@@ -55,65 +137,255 @@ function EditorShell() {
 
       dispatch({
         type: 'ADD_COMPONENT',
-        payload: {
-          parentId: null,
-          region,
-          component: { name: id, type, option },
-        },
+        payload: { parentId: null, region, sectionId, component: { name: id, type, option } },
       });
 
+      if (sectionId) dispatch({ type: 'SELECT_SECTION', payload: sectionId });
       dispatch({ type: 'SELECT', payload: id });
     },
     [dispatch]
   );
 
+  async function handleSave(status: 'draft' | 'published') {
+    const id = configId || prompt('Enter a config ID:');
+    if (!id) return;
+
+    setSaving(true);
+    try {
+      const configPayload = { sections: state.sections };
+      await saveConfig(domain, id, [configPayload] as any, status);
+      setConfigStatus(status);
+      if (!configId) {
+        setSearchParams({ domain, id });
+      }
+      showToast(status === 'published' ? 'Published!' : 'Draft saved!');
+    } catch (err) {
+      console.error('Save failed:', err);
+      showToast('Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handlePreview() {
+    sessionStorage.setItem('mjs-preview-config', JSON.stringify(state.tree));
+    const params = new URLSearchParams({ domain });
+    if (configId) params.set('id', configId);
+    window.open(`/preview?${params.toString()}`, '_blank');
+  }
+
   const draggedDef = draggedType ? registryMap.get(draggedType) : null;
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div style={styles.root}>
-        {/* Header */}
-        <header style={styles.header}>
-          <div style={styles.headerLeft}>
-            <h1 style={styles.title}>MJS Portal Editor</h1>
-          </div>
-          <div style={styles.headerActions}>
-            <button style={styles.secondaryBtn} onClick={() => loadFromStorage(dispatch)}>
-              Load
-            </button>
-            <button style={styles.secondaryBtn} onClick={() => exportJSON(state)}>
-              Export JSON
-            </button>
-            <label style={styles.secondaryBtn}>
-              Import
-              <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => importJSON(e, dispatch)} />
-            </label>
-            <button style={styles.primaryBtn} onClick={() => saveToStorage(state)}>
-              Save
-            </button>
-          </div>
-        </header>
+      <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
 
-        {/* Three-panel body */}
-        <div style={styles.body}>
-          <div style={styles.leftPanel}>
-            <Sidebar />
+        {/* ===== INFINITE CANVAS ===== */}
+        <TransformWrapper
+          ref={canvasWrapperRef}
+          initialScale={0.85}
+          minScale={0.2}
+          maxScale={2.5}
+          centerOnInit={false}
+          initialPositionX={-450}
+          initialPositionY={-40}
+          wheel={{ step: 0.08 }}
+          panning={{ velocityDisabled: true, excluded: ['input', 'textarea', 'select', 'button', 'no-pan'] }}
+          doubleClick={{ disabled: true }}
+          limitToBounds={false}
+          onTransformed={(_ref, state) => setCanvasScale(state.scale)}
+        >
+          <div className="canvas-viewport">
+            <TransformComponent
+              wrapperStyle={{ width: '100%', height: '100%' }}
+              contentStyle={{ minWidth: '3000px', minHeight: '3000px', position: 'relative' }}
+            >
+              <div className="canvas-dot-grid" />
+              <div style={{
+                position: 'relative',
+                width: '1100px',
+                margin: '80px auto 400px',
+                padding: '40px',
+              }}>
+                <Preview />
+              </div>
+            </TransformComponent>
           </div>
-          <div style={styles.centerPanel}>
-            <Preview />
-          </div>
-          <div style={styles.rightPanel}>
-            <ConfigForm />
-          </div>
-        </div>
+          <ZoomControls scale={canvasScale} />
+        </TransformWrapper>
+
+        {/* ===== FLOATING TOP TOOLBAR ===== */}
+        <motion.div
+          className="floating-toolbar-top"
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
+          style={{ maxWidth: 'calc(100vw - 32px)' }}
+        >
+          <div style={{
+            width: 22, height: 22,
+            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            borderRadius: 5,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0,
+          }}>M</div>
+
+          <span className={`badge ${configStatus === 'published' ? 'badge-published' : 'badge-draft'}`}>
+            {configStatus}
+          </span>
+
+          <div className="toolbar-divider" />
+
+          <button className="btn-toolbar" onClick={() => setLeftOpen((v) => !v)} title="Toggle palette (L)">
+            {leftOpen ? '\u25E7' : '\u25A6'}
+          </button>
+          <button className="btn-toolbar" onClick={() => setRightOpen((v) => !v)} title="Toggle inspector (R)">
+            {rightOpen ? '\u25E8' : '\u25A7'}
+          </button>
+
+          <div className="toolbar-divider" />
+
+          <button className="btn-toolbar" onClick={() => dispatch({ type: 'ADD_SECTION' })}>
+            + Section
+          </button>
+
+          <div className="toolbar-divider" />
+
+          <button
+            className="btn-toolbar"
+            onClick={() => handleSave('draft')}
+            disabled={saving}
+          >
+            {saving ? '...' : 'Save'}
+          </button>
+          <button
+            className="btn-toolbar btn-toolbar-success"
+            onClick={() => handleSave('published')}
+            disabled={saving}
+          >
+            {saving ? '...' : 'Publish'}
+          </button>
+          <button className="btn-toolbar btn-toolbar-accent" onClick={handlePreview}>
+            Preview &#x2197;
+          </button>
+        </motion.div>
+
+        {/* ===== FLOATING LEFT PANEL (Sidebar) ===== */}
+        <AnimatePresence>
+          {leftOpen && (
+            <motion.div
+              className="floating-panel"
+              style={{
+                position: 'fixed',
+                left: 16,
+                top: 72,
+                bottom: 72,
+                width: 272,
+              }}
+              initial={{ x: -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -300, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+            >
+              <Sidebar />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!leftOpen && (
+          <button
+            className="panel-toggle panel-toggle-left"
+            onClick={() => setLeftOpen(true)}
+            title="Show palette (L)"
+          >
+            &#x25B6;
+          </button>
+        )}
+
+        {/* ===== FLOATING RIGHT PANEL (Config) ===== */}
+        <AnimatePresence>
+          {rightOpen && (
+            <motion.div
+              className="floating-panel"
+              style={{
+                position: 'fixed',
+                right: 16,
+                top: 72,
+                bottom: 72,
+                width: 320,
+              }}
+              initial={{ x: 340, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 340, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+            >
+              <ConfigForm onClose={() => setRightOpen(false)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!rightOpen && (
+          <button
+            className="panel-toggle panel-toggle-right"
+            onClick={() => setRightOpen(true)}
+            title="Show inspector (R)"
+          >
+            &#x25C0;
+          </button>
+        )}
+
+        {/* ===== TOAST ===== */}
+        <AnimatePresence>
+          {toastMsg && (
+            <motion.div
+              key="toast"
+              initial={{ y: 40, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              style={{
+                position: 'fixed',
+                bottom: 24,
+                right: 24,
+                background: 'rgba(15, 23, 42, 0.92)',
+                backdropFilter: 'blur(12px)',
+                color: '#fff',
+                padding: '10px 20px',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                zIndex: 1000,
+              }}
+            >
+              {toastMsg}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <DragOverlay>
         {draggedDef ? (
-          <div style={styles.dragOverlay}>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0.8 }}
+            animate={{ scale: 1.05, opacity: 1 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              background: '#fff',
+              border: '2px solid var(--color-primary, #3b82f6)',
+              borderRadius: 12,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1e293b',
+            }}
+          >
             <span>{draggedDef.icon}</span>
             <span>{draggedDef.label}</span>
-          </div>
+          </motion.div>
         ) : null}
       </DragOverlay>
     </DndContext>
@@ -127,166 +399,3 @@ export function App() {
     </EditorProvider>
   );
 }
-
-function buildSavedConfig(state: { layout: string; splitRatio: number; regionComponents: Record<string, any[]> }): SavedEditorConfig {
-  return {
-    layout: state.layout as SavedEditorConfig['layout'],
-    splitRatio: state.splitRatio,
-    regionComponents: state.regionComponents,
-  };
-}
-
-function saveToStorage(state: { layout: string; splitRatio: number; regionComponents: Record<string, any[]> }) {
-  localStorage.setItem('mjs-editor-config', JSON.stringify(buildSavedConfig(state)));
-  alert('Configuration saved!');
-}
-
-function loadFromStorage(dispatch: any): void {
-  const raw = localStorage.getItem('mjs-editor-config');
-  if (!raw) {
-    alert('No saved configuration found.');
-    return;
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed.regionComponents) {
-      dispatch({ type: 'LOAD_FULL', payload: {
-        layout: parsed.layout ?? 'fullWidth',
-        splitRatio: parsed.splitRatio ?? 25,
-        regionComponents: parsed.regionComponents,
-      }});
-    } else if (parsed.tree) {
-      dispatch({ type: 'LOAD_CONFIG', payload: parsed.tree });
-    }
-  } catch {
-    alert('Invalid saved configuration.');
-  }
-}
-
-function exportJSON(state: { layout: string; splitRatio: number; regionComponents: Record<string, any[]> }) {
-  const config = buildSavedConfig(state);
-  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'portal-config.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importJSON(e: React.ChangeEvent<HTMLInputElement>, dispatch: any) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result as string);
-      if (parsed.regionComponents) {
-        dispatch({ type: 'LOAD_FULL', payload: {
-          layout: parsed.layout ?? 'fullWidth',
-          splitRatio: parsed.splitRatio ?? 25,
-          regionComponents: parsed.regionComponents,
-        }});
-      } else if (Array.isArray(parsed)) {
-        dispatch({ type: 'LOAD_CONFIG', payload: parsed });
-      }
-    } catch {
-      alert('Invalid JSON file.');
-    }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  root: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    background: '#f1f5f9',
-    color: '#1e293b',
-    margin: 0,
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 20px',
-    height: '52px',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-    color: '#fff',
-    flexShrink: 0,
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  title: {
-    fontSize: '15px',
-    fontWeight: 700,
-    letterSpacing: '-0.02em',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-  },
-  primaryBtn: {
-    padding: '6px 16px',
-    fontSize: '13px',
-    fontWeight: 600,
-    background: '#3b82f6',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  secondaryBtn: {
-    padding: '6px 14px',
-    fontSize: '13px',
-    fontWeight: 500,
-    background: 'rgba(255,255,255,0.1)',
-    color: '#cbd5e1',
-    border: '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  body: {
-    display: 'grid',
-    gridTemplateColumns: '260px 1fr 320px',
-    flex: 1,
-    overflow: 'hidden',
-  },
-  leftPanel: {
-    background: '#fff',
-    borderRight: '1px solid #e2e8f0',
-    overflowY: 'auto' as const,
-  },
-  centerPanel: {
-    background: '#f8fafc',
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    padding: '20px',
-    minHeight: 0,
-  },
-  rightPanel: {
-    background: '#fff',
-    borderLeft: '1px solid #e2e8f0',
-    overflowY: 'auto' as const,
-  },
-  dragOverlay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 14px',
-    background: '#fff',
-    border: '2px solid #3b82f6',
-    borderRadius: '8px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#1e293b',
-  },
-};

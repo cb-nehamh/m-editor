@@ -1,58 +1,44 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { useEditor, LAYOUT_DEFS, type EditorComponent } from '../state';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEditor, LAYOUT_DEFS, type EditorComponent, type LayoutSection } from '../state';
 import { registryMap } from '../component-registry';
 
-function RegionDropZone({ region, regionLabel, children }: {
+function RegionDropZone({ region, regionLabel, sectionId, children }: {
   region: string;
   regionLabel: string;
+  sectionId: string;
   children?: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({
-    id: `drop-region-${region}`,
-    data: { parentId: null, region },
+    id: `drop-region-${sectionId}-${region}`,
+    data: { parentId: null, region, sectionId },
   });
 
   return (
     <div
       ref={setNodeRef}
-      style={{
-        flex: 1,
-        minHeight: '200px',
-        border: `2px dashed ${isOver ? '#3b82f6' : '#d1d5db'}`,
-        borderRadius: '10px',
-        background: isOver ? '#eff6ff' : '#fff',
-        transition: 'all 0.15s',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className={`drop-zone no-pan${isOver ? ' over' : ''}`}
+      style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
     >
-      <div style={{
-        padding: '8px 14px',
-        fontSize: '11px',
-        fontWeight: 700,
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.06em',
-        color: '#64748b',
-        borderBottom: '1px solid #e2e8f0',
-        background: '#f8fafc',
-        borderRadius: '10px 10px 0 0',
-      }}>
-        {regionLabel}
-      </div>
-      <div style={{ flex: 1, padding: '0' }}>
+      <div className="drop-zone-label">{regionLabel}</div>
+      <div style={{ flex: 1, padding: 0 }}>
         {children}
-        {isOver && (
-          <div style={{
-            padding: '12px',
-            textAlign: 'center',
-            fontSize: '12px',
-            color: '#3b82f6',
-            fontWeight: 600,
-          }}>
-            Drop here
-          </div>
-        )}
+        <AnimatePresence>
+          {isOver && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              style={{
+                padding: 14, textAlign: 'center', fontSize: 12,
+                color: 'var(--color-primary)', fontWeight: 600,
+              }}
+            >
+              Drop component here
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -71,11 +57,61 @@ function resolveEditorStyles(editorStyles: Record<string, any> | undefined): Rec
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
 
+function ResizeHandles({ onResize }: { onResize: (delta: { dw: number; dh: number }) => void }) {
+  const startRef = useRef<{ x: number; y: number; type: string } | null>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, type: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startRef.current = { x: e.clientX, y: e.clientY, type };
+
+    const handleMove = (ev: MouseEvent) => {
+      if (!startRef.current) return;
+      const dx = ev.clientX - startRef.current.x;
+      const dy = ev.clientY - startRef.current.y;
+      startRef.current.x = ev.clientX;
+      startRef.current.y = ev.clientY;
+
+      if (startRef.current.type === 'right') onResize({ dw: dx, dh: 0 });
+      else if (startRef.current.type === 'bottom') onResize({ dw: 0, dh: dy });
+      else if (startRef.current.type === 'corner') onResize({ dw: dx, dh: dy });
+    };
+
+    const handleUp = () => {
+      startRef.current = null;
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  }, [onResize]);
+
+  return (
+    <>
+      <div
+        className="resize-handle resize-handle-right"
+        onMouseDown={(e) => handleMouseDown(e, 'right')}
+      />
+      <div
+        className="resize-handle resize-handle-bottom"
+        onMouseDown={(e) => handleMouseDown(e, 'bottom')}
+      />
+      <div
+        className="resize-handle resize-handle-corner"
+        onMouseDown={(e) => handleMouseDown(e, 'corner')}
+      />
+    </>
+  );
+}
+
 function LiveWidget({ node }: { node: EditorComponent }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef<string | null>(null);
   const { dispatch, state } = useEditor();
   const isSelected = state.selectedId === node.name;
+  const [localDims, setLocalDims] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     const mjs = (window as any).MJS;
@@ -108,160 +144,239 @@ function LiveWidget({ node }: { node: EditorComponent }) {
 
     return () => {
       if (mountedRef.current) {
-        try {
-          mjs.unmount(mountedRef.current);
-        } catch { /* ignore */ }
+        try { mjs.unmount(mountedRef.current); } catch { /* ignore */ }
         mountedRef.current = null;
       }
     };
   }, [node.name, node.type, JSON.stringify(node.option)]);
 
+  const handleResize = useCallback((delta: { dw: number; dh: number }) => {
+    setLocalDims((prev) => {
+      const cur = prev ?? {
+        width: containerRef.current?.offsetWidth ?? 300,
+        height: containerRef.current?.offsetHeight ?? 100,
+      };
+      const newW = Math.max(100, cur.width + delta.dw);
+      const newH = Math.max(60, cur.height + delta.dh);
+      return { width: newW, height: newH };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (localDims) {
+      const timeout = setTimeout(() => {
+        dispatch({
+          type: 'RESIZE_COMPONENT',
+          payload: { id: node.name, dimensions: localDims },
+        });
+      }, 200);
+      return () => clearTimeout(timeout);
+    }
+  }, [localDims, node.name, dispatch]);
+
   const def = registryMap.get(node.type);
   const margin = node.option?.spacing?.margin ?? {};
-  const spacingStyle: React.CSSProperties = {
+  const dims = node.option?.dimensions;
+  const containerStyle: React.CSSProperties = {
     marginTop: margin.top ? `${margin.top}px` : undefined,
     marginRight: margin.right ? `${margin.right}px` : undefined,
     marginBottom: margin.bottom ? `${margin.bottom}px` : '8px',
     marginLeft: margin.left ? `${margin.left}px` : undefined,
+    width: localDims?.width ?? dims?.width ?? undefined,
+    minHeight: localDims?.height ?? dims?.height ?? undefined,
   };
 
   return (
-    <div
+    <motion.div
+      ref={containerRef}
+      layout
+      initial={{ opacity: 0, scale: 0.96, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96, y: -8 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
       onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SELECT', payload: node.name }); }}
-      style={{
-        border: isSelected ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
-        boxShadow: isSelected ? '0 0 0 3px rgba(59,130,246,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-        position: 'relative',
-        background: '#fff',
-        ...spacingStyle,
-      }}
+      className={`widget-card no-pan${isSelected ? ' selected' : ''}`}
+      style={containerStyle}
     >
-      {/* Remove button */}
+      <div className="drag-handle" title="Drag to reorder">&#x2630;</div>
+
       <button
         onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
         style={{
-          position: 'absolute', top: '6px', right: '6px', zIndex: 1,
-          width: '22px', height: '22px',
+          position: 'absolute', top: 6, right: 6, zIndex: 5,
+          width: 22, height: 22,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '1px solid #e2e8f0', borderRadius: '4px',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-sm)',
           background: '#fff', cursor: 'pointer',
-          color: '#94a3b8', fontSize: '14px', lineHeight: 1,
+          color: 'var(--color-text-muted)', fontSize: 13, lineHeight: 1,
           opacity: isSelected ? 1 : 0,
-          transition: 'opacity 0.15s',
+          transition: 'opacity var(--transition-fast)',
         }}
         title="Remove"
-      >
-        {'\u00D7'}
-      </button>
+      >{'\u00D7'}</button>
 
-      {/* Component title */}
       {(() => {
         const titleText = node.option?.titleText ?? def?.label ?? node.type;
         const headingStyle = node.option?.styles?.heading ?? {};
         const resolvedHeadingStyle: React.CSSProperties = {
-          fontSize: headingStyle.fontSize ? `${headingStyle.fontSize}px` : '16px',
+          fontSize: headingStyle.fontSize ? `${headingStyle.fontSize}px` : '15px',
           fontWeight: 700,
-          color: headingStyle.color || '#1e293b',
+          color: headingStyle.color || 'var(--color-text)',
           margin: 0,
-          padding: '12px 16px 4px',
+          padding: '12px 16px 4px 36px',
         };
         return <h3 style={resolvedHeadingStyle}>{titleText}</h3>;
       })()}
 
-      {/* Actual MJS widget host */}
-      <div
-        ref={hostRef}
-        style={{ minHeight: '60px' }}
-      />
-    </div>
+      <div ref={hostRef} style={{ minHeight: 60, padding: '0 8px 8px' }} />
+
+      {isSelected && <ResizeHandles onResize={handleResize} />}
+    </motion.div>
+  );
+}
+
+const regionLabels: Record<string, string> = {
+  main: 'MAIN', left: 'LEFT', right: 'RIGHT', sidebar: 'SIDEBAR', content: 'CONTENT',
+};
+
+function SectionPreview({ section, index }: { section: LayoutSection; index: number }) {
+  const { state, dispatch } = useEditor();
+  const isActive = state.activeSectionId === section.id;
+  const layoutDef = LAYOUT_DEFS.find((l) => l.type === section.layout)!;
+  const totalComponents = Object.values(section.regionComponents).flat().length;
+
+  const gridColumns = (() => {
+    switch (section.layout) {
+      case 'fullWidth': return '1fr';
+      case 'twoColumn': return '1fr 1fr';
+      case 'sidebar': return `${section.splitRatio}fr ${100 - section.splitRatio}fr`;
+    }
+  })();
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      onClick={() => dispatch({ type: 'SELECT_SECTION', payload: section.id })}
+      className={`section-card no-pan${isActive ? ' active' : ''}`}
+    >
+      <div className="section-card-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700,
+            color: isActive ? '#1d4ed8' : 'var(--color-text-muted)',
+            background: isActive ? '#dbeafe' : '#e2e8f0',
+            padding: '3px 10px', borderRadius: 6,
+            transition: 'all var(--transition-fast)',
+          }}>
+            Section {index + 1}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+            {layoutDef.label} &middot; {totalComponents} component{totalComponents !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {index > 0 && (
+            <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_SECTIONS', payload: { fromIndex: index, toIndex: index - 1 } }); }}
+              className="btn btn-ghost btn-sm" title="Move up">&#x25B2;</button>
+          )}
+          {index < state.sections.length - 1 && (
+            <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REORDER_SECTIONS', payload: { fromIndex: index, toIndex: index + 1 } }); }}
+              className="btn btn-ghost btn-sm" title="Move down">&#x25BC;</button>
+          )}
+          {state.sections.length > 1 && (
+            <button onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_SECTION', payload: section.id }); }}
+              className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)' }}
+              title="Remove section">&#x00D7;</button>
+          )}
+        </div>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: gridColumns,
+          gap: 12, minHeight: 100,
+        }}>
+          {layoutDef.regions.map((region) => {
+            const comps = section.regionComponents[region] ?? [];
+            return (
+              <RegionDropZone key={region} region={region} sectionId={section.id}
+                regionLabel={regionLabels[region] ?? region.toUpperCase()}>
+                {comps.length > 0 ? (
+                  <div style={{ padding: 8 }}>
+                    <AnimatePresence>
+                      {comps.map((node) => <LiveWidget key={node.name} node={node} />)}
+                    </AnimatePresence>
+                  </div>
+                ) : undefined}
+              </RegionDropZone>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 export function Preview() {
-  const { state } = useEditor();
-  const layoutDef = LAYOUT_DEFS.find((l) => l.type === state.layout)!;
-
-  const gridColumns = (() => {
-    switch (state.layout) {
-      case 'fullWidth': return '1fr';
-      case 'twoColumn': return '1fr 1fr';
-      case 'sidebar': return `${state.splitRatio}fr ${100 - state.splitRatio}fr`;
-    }
-  })();
-
-  const regionLabels: Record<string, string> = {
-    main: 'MAIN',
-    left: 'LEFT',
-    right: 'RIGHT',
-    sidebar: 'SIDEBAR',
-    content: 'CONTENT',
-  };
+  const { state, dispatch } = useEditor();
+  const totalComponents = state.sections.reduce(
+    (sum, s) => sum + Object.values(s.regionComponents).flat().length, 0
+  );
 
   return (
-    <div>
-      {/* Header */}
+    <div className="no-pan">
+      <div className="demo-banner">
+        <span style={{ fontSize: 14 }}>&#x26A0;</span>
+        <span><strong>Demo data</strong> &mdash; components display sample data in the editor. Use <strong>Preview</strong> to see real customer data.</span>
+      </div>
+
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '16px',
+        marginBottom: 20,
       }}>
         <div>
-          <h3 style={{
-            fontSize: '16px', fontWeight: 700, color: '#1e293b', margin: 0,
-          }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
             Page Builder
           </h3>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            Layout: {layoutDef.label}
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+            {state.sections.length} section{state.sections.length !== 1 ? 's' : ''} &middot; {totalComponents} component{totalComponents !== 1 ? 's' : ''}
           </div>
         </div>
-        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-          {Object.values(state.regionComponents).flat().length} component(s)
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.04, y: -1 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => dispatch({ type: 'ADD_SECTION' })}
+          className="btn btn-primary"
+        >
+          + Add Section
+        </motion.button>
       </div>
 
-      {/* Layout regions */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: gridColumns,
-        gap: '12px',
-        minHeight: '400px',
-      }}>
-        {layoutDef.regions.map((region) => {
-          const comps = state.regionComponents[region] ?? [];
-          return (
-            <RegionDropZone
-              key={region}
-              region={region}
-              regionLabel={regionLabels[region] ?? region.toUpperCase()}
-            >
-              {comps.length > 0 ? (
-                <div style={{ padding: '8px' }}>
-                  {comps.map((node) => (
-                    <LiveWidget key={node.name} node={node} />
-                  ))}
-                </div>
-              ) : undefined}
-            </RegionDropZone>
-          );
-        })}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <AnimatePresence>
+          {state.sections.map((section, index) => (
+            <SectionPreview key={section.id} section={section} index={index} />
+          ))}
+        </AnimatePresence>
       </div>
 
-      {/* JSON Preview */}
       {state.tree.length > 0 && (
-        <details style={{ marginTop: '20px' }}>
+        <details style={{ marginTop: 28 }}>
           <summary style={{
-            fontSize: '12px', fontWeight: 600, color: '#64748b', cursor: 'pointer',
-            padding: '8px 0',
+            fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)',
+            cursor: 'pointer', padding: '8px 0',
           }}>
             View Config JSON
           </summary>
           <pre style={{
-            background: '#1e293b', color: '#e2e8f0', padding: '14px',
-            borderRadius: '8px', fontSize: '11px', overflow: 'auto',
-            maxHeight: '300px', lineHeight: 1.5,
+            background: '#0f172a', color: '#e2e8f0', padding: 16,
+            borderRadius: 'var(--radius-lg)', fontSize: 11,
+            overflow: 'auto', maxHeight: 300, lineHeight: 1.6,
+            border: '1px solid #1e293b',
           }}>
             {JSON.stringify(state.tree, null, 2)}
           </pre>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import { motion, AnimatePresence } from 'framer-motion';
 import { componentRegistry, type ComponentDef } from '../component-registry';
-import { useEditor, LAYOUT_DEFS, type LayoutType, type EditorComponent } from '../state';
+import { useEditor, LAYOUT_DEFS, type LayoutType, type EditorComponent, getActiveSection } from '../state';
 
 function LayoutThumbnail({ type, label, isActive, onClick }: {
   type: LayoutType;
@@ -11,56 +12,44 @@ function LayoutThumbnail({ type, label, isActive, onClick }: {
 }) {
   const columns: React.CSSProperties = (() => {
     switch (type) {
-      case 'fullWidth':
-        return { gridTemplateColumns: '1fr' };
-      case 'twoColumn':
-        return { gridTemplateColumns: '1fr 1fr' };
-      case 'sidebar':
-        return { gridTemplateColumns: '1fr 2.5fr' };
+      case 'fullWidth': return { gridTemplateColumns: '1fr' };
+      case 'twoColumn': return { gridTemplateColumns: '1fr 1fr' };
+      case 'sidebar': return { gridTemplateColumns: '1fr 2.5fr' };
     }
   })();
-
   const regionCount = type === 'fullWidth' ? 1 : 2;
 
   return (
-    <button
+    <motion.button
+      whileHover={{ y: -1, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+      whileTap={{ scale: 0.97 }}
       onClick={onClick}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '10px 8px',
-        borderRadius: '8px',
-        border: `2px solid ${isActive ? '#3b82f6' : '#e2e8f0'}`,
-        background: isActive ? '#eff6ff' : '#fff',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+        padding: '8px 6px', borderRadius: 'var(--radius-md)',
+        border: `2px solid ${isActive ? 'var(--color-primary)' : 'var(--color-border)'}`,
+        background: isActive ? 'var(--color-primary-light)' : '#fff',
+        cursor: 'pointer', transition: 'all var(--transition-fast)',
         flex: 1,
       }}
     >
-      <div style={{ display: 'grid', ...columns, gap: '3px', width: '100%', height: '32px' }}>
+      <div style={{ display: 'grid', ...columns, gap: 2, width: '100%', height: 26 }}>
         {Array.from({ length: regionCount }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              background: isActive ? '#bfdbfe' : '#e2e8f0',
-              borderRadius: '3px',
-              border: `1px solid ${isActive ? '#93c5fd' : '#cbd5e1'}`,
-            }}
-          />
+          <div key={i} style={{
+            background: isActive ? 'var(--color-primary-border)' : '#e2e8f0',
+            borderRadius: 3,
+            border: `1px solid ${isActive ? '#93c5fd' : '#cbd5e1'}`,
+          }} />
         ))}
       </div>
       <div style={{
-        fontSize: '10px',
-        fontWeight: isActive ? 700 : 500,
-        color: isActive ? '#1d4ed8' : '#64748b',
-        textAlign: 'center',
-        lineHeight: 1.2,
+        fontSize: 9, fontWeight: isActive ? 700 : 500,
+        color: isActive ? '#1d4ed8' : 'var(--color-text-muted)',
+        textAlign: 'center', lineHeight: 1.2,
       }}>
         {label}
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -75,26 +64,12 @@ function DraggablePaletteItem({ def }: { def: ComponentDef }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 10px',
-        borderRadius: '6px',
-        border: '1px solid #e2e8f0',
-        background: isDragging ? '#eff6ff' : '#fff',
-        cursor: 'grab',
-        fontSize: '13px',
-        fontWeight: 500,
-        color: '#334155',
-        transition: 'border-color 0.15s, background 0.15s',
-        opacity: isDragging ? 0.5 : 1,
-      }}
+      className={`palette-item${isDragging ? ' dragging' : ''}`}
     >
-      <span style={{ fontSize: '16px', lineHeight: 1 }}>{def.icon}</span>
+      <span className="palette-icon">{def.icon}</span>
       <div>
-        <div>{def.label}</div>
-        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400 }}>{def.description}</div>
+        <div style={{ fontWeight: 600, fontSize: 12 }}>{def.label}</div>
+        <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 400, marginTop: 1 }}>{def.description}</div>
       </div>
     </div>
   );
@@ -105,130 +80,229 @@ function TreeNode({ node, depth }: { node: EditorComponent; depth: number }) {
   const isSelected = state.selectedId === node.name;
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.child && node.child.length > 0;
+  const def = componentRegistry.find((c) => c.id === node.type);
 
   return (
     <div>
-      <div
+      <motion.div
+        whileHover={{ backgroundColor: isSelected ? undefined : 'rgba(241, 245, 249, 0.8)' }}
         onClick={() => dispatch({ type: 'SELECT', payload: node.name })}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 8px',
-          paddingLeft: `${8 + depth * 16}px`,
-          borderRadius: '4px',
-          background: isSelected ? '#eff6ff' : 'transparent',
-          borderLeft: isSelected ? '3px solid #3b82f6' : '3px solid transparent',
-          cursor: 'pointer',
-          fontSize: '12px',
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '5px 8px', paddingLeft: `${8 + depth * 14}px`,
+          borderRadius: 4,
+          background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+          borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
+          cursor: 'pointer', fontSize: 11,
           fontWeight: isSelected ? 600 : 400,
-          color: isSelected ? '#1e40af' : '#475569',
+          color: isSelected ? '#1e40af' : 'var(--color-text-secondary)',
           transition: 'all 0.1s',
         }}
       >
-        {hasChildren && (
+        {hasChildren ? (
           <span
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            style={{ cursor: 'pointer', fontSize: '10px', width: '14px', textAlign: 'center', color: '#94a3b8' }}
+            style={{ cursor: 'pointer', fontSize: 8, width: 12, textAlign: 'center', color: 'var(--color-text-muted)' }}
           >
             {expanded ? '\u25BC' : '\u25B6'}
           </span>
+        ) : (
+          <span style={{ width: 12 }} />
         )}
-        {!hasChildren && <span style={{ width: '14px' }} />}
-        <span style={{ fontSize: '13px' }}>{getIconForType(node.type)}</span>
-        <span style={{ flex: 1 }}>{node.name}</span>
+        <span style={{ fontSize: 12 }}>{def?.icon ?? '\u2B1C'}</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
         <button
           onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
           style={{
-            border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8',
-            fontSize: '14px', padding: '0 2px', lineHeight: 1,
+            border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)',
+            fontSize: 13, padding: '0 2px', lineHeight: 1, opacity: 0.4,
           }}
           title="Remove"
-        >
-          {'\u00D7'}
-        </button>
-      </div>
-      {hasChildren && expanded && node.child!.map((child) => (
-        <TreeNode key={child.name} node={child} depth={depth + 1} />
-      ))}
+        >{'\u00D7'}</button>
+      </motion.div>
+      <AnimatePresence>
+        {hasChildren && expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            {node.child!.map((child) => (
+              <TreeNode key={child.name} node={child} depth={depth + 1} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function getIconForType(type: string): string {
-  const def = componentRegistry.find((c) => c.id === type);
-  return def?.icon ?? '\u2B1C';
+function SectionBlock({ title, defaultOpen = true, badge, children }: {
+  title: string; defaultOpen?: boolean; badge?: string; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ borderBottom: '1px solid rgba(226, 232, 240, 0.5)' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px', border: 'none', background: 'transparent',
+          cursor: 'pointer', fontSize: 10, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+          color: 'var(--color-text-muted)',
+          fontFamily: 'var(--font-sans)',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {title}
+          {badge && (
+            <span style={{
+              fontSize: 9, fontWeight: 700, background: 'var(--color-primary-light)',
+              color: 'var(--color-primary)', padding: '1px 6px', borderRadius: 10,
+            }}>{badge}</span>
+          )}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 0 : -90 }}
+          transition={{ duration: 0.15 }}
+          style={{ fontSize: 9, color: 'var(--color-text-muted)' }}
+        >
+          {'\u25BC'}
+        </motion.span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '0 14px 12px' }}>
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export function Sidebar() {
   const { state, dispatch } = useEditor();
+  const activeSection = getActiveSection(state);
+  const [search, setSearch] = useState('');
+
+  const filteredComponents = search
+    ? componentRegistry.filter((c) =>
+        c.label.toLowerCase().includes(search.toLowerCase()) ||
+        c.description.toLowerCase().includes(search.toLowerCase())
+      )
+    : componentRegistry;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Layouts */}
-      <div style={{ padding: '14px', borderBottom: '1px solid #e2e8f0' }}>
-        <h3 style={sectionHeading}>Layouts</h3>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {LAYOUT_DEFS.map((def) => (
-            <LayoutThumbnail
-              key={def.type}
-              type={def.type}
-              label={def.label}
-              isActive={state.layout === def.type}
-              onClick={() => dispatch({ type: 'SET_LAYOUT', payload: def.type })}
-            />
-          ))}
-        </div>
-
-        {state.layout === 'sidebar' && (
-          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>Split</label>
-            <input
-              type="range"
-              min={15}
-              max={50}
-              step={5}
-              value={state.splitRatio}
-              onChange={(e) => dispatch({ type: 'SET_SPLIT', payload: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#3b82f6' }}
-            />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', minWidth: '48px', textAlign: 'right' }}>
-              {state.splitRatio} / {100 - state.splitRatio}
-            </span>
-          </div>
-        )}
+      <div className="floating-panel-header">
+        <h3>Component Palette</h3>
+        <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+          {state.sections.length} section{state.sections.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
-      {/* Components */}
-      <div style={{ padding: '14px', borderBottom: '1px solid #e2e8f0' }}>
-        <h3 style={sectionHeading}>Components</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {componentRegistry.map((def) => (
-            <DraggablePaletteItem key={def.id} def={def} />
-          ))}
-        </div>
-      </div>
-
-      {/* Config Tree */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '14px 8px' }}>
-        <h3 style={{ ...sectionHeading, paddingLeft: '6px' }}>Config Tree</h3>
-        {state.tree.length === 0 ? (
-          <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
-            Select a layout and drag components to start
+      <div className="floating-panel-body" style={{ flex: 1 }}>
+        {/* Section tabs */}
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(226, 232, 240, 0.5)' }}>
+          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+            {state.sections.map((s, i) => (
+              <motion.button
+                key={s.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => dispatch({ type: 'SELECT_SECTION', payload: s.id })}
+                style={{
+                  padding: '4px 10px', fontSize: 10,
+                  fontWeight: s.id === state.activeSectionId ? 700 : 500,
+                  background: s.id === state.activeSectionId
+                    ? 'linear-gradient(135deg, #3b82f6, #2563eb)'
+                    : '#f1f5f9',
+                  color: s.id === state.activeSectionId ? '#fff' : 'var(--color-text-muted)',
+                  border: 'none', borderRadius: 5, cursor: 'pointer',
+                  transition: 'all var(--transition-fast)',
+                  boxShadow: s.id === state.activeSectionId ? '0 2px 6px rgba(59,130,246,0.25)' : 'none',
+                }}
+              >
+                {i + 1}
+              </motion.button>
+            ))}
           </div>
-        ) : (
-          state.tree.map((node) => <TreeNode key={node.name} node={node} depth={0} />)
+        </div>
+
+        {/* Layout picker */}
+        {activeSection && (
+          <SectionBlock title="Layout" defaultOpen={true}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {LAYOUT_DEFS.map((def) => (
+                <LayoutThumbnail
+                  key={def.type}
+                  type={def.type}
+                  label={def.label}
+                  isActive={activeSection.layout === def.type}
+                  onClick={() => dispatch({ type: 'SET_LAYOUT', payload: def.type })}
+                />
+              ))}
+            </div>
+            {activeSection.layout === 'sidebar' && (
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Split</label>
+                <input
+                  type="range" min={15} max={50} step={5}
+                  value={activeSection.splitRatio}
+                  onChange={(e) => dispatch({ type: 'SET_SPLIT', payload: Number(e.target.value) })}
+                  style={{ flex: 1, accentColor: 'var(--color-primary)' }}
+                />
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text)', minWidth: 42, textAlign: 'right' }}>
+                  {activeSection.splitRatio}/{100 - activeSection.splitRatio}
+                </span>
+              </div>
+            )}
+          </SectionBlock>
         )}
+
+        {/* Components */}
+        <SectionBlock title="Components" defaultOpen={true} badge={`${filteredComponents.length}`}>
+          <input
+            type="text"
+            placeholder="Search components..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input"
+            style={{ marginBottom: 8, fontSize: 11, padding: '5px 10px' }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {filteredComponents.map((def) => (
+              <DraggablePaletteItem key={def.id} def={def} />
+            ))}
+          </div>
+        </SectionBlock>
+
+        {/* Config Tree */}
+        <SectionBlock title="Config Tree" defaultOpen={true} badge={state.tree.length > 0 ? `${state.tree.length}` : undefined}>
+          {state.tree.length === 0 ? (
+            <div style={{
+              padding: '16px 0', textAlign: 'center', fontSize: 11,
+              color: 'var(--color-text-muted)',
+            }}>
+              Drag components to start building
+            </div>
+          ) : (
+            state.tree.map((node) => <TreeNode key={node.name} node={node} depth={0} />)
+          )}
+        </SectionBlock>
       </div>
     </div>
   );
 }
-
-const sectionHeading: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: '#94a3b8',
-  marginBottom: '10px',
-};
