@@ -71,6 +71,10 @@ export function PreviewPage() {
 
       portalRef.current.innerHTML = '';
 
+      if (typeof mjs.resetSession === 'function') {
+        mjs.resetSession();
+      }
+
       mjs.loadPortalComponent('#preview-portal-host', config, {
         domain,
         token: session.token,

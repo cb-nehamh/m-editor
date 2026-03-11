@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, LAYOUT_DEFS, type EditorComponent, type LayoutSection } from '../state';
@@ -57,61 +57,11 @@ function resolveEditorStyles(editorStyles: Record<string, any> | undefined): Rec
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
 
-function ResizeHandles({ onResize }: { onResize: (delta: { dw: number; dh: number }) => void }) {
-  const startRef = useRef<{ x: number; y: number; type: string } | null>(null);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent, type: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    startRef.current = { x: e.clientX, y: e.clientY, type };
-
-    const handleMove = (ev: MouseEvent) => {
-      if (!startRef.current) return;
-      const dx = ev.clientX - startRef.current.x;
-      const dy = ev.clientY - startRef.current.y;
-      startRef.current.x = ev.clientX;
-      startRef.current.y = ev.clientY;
-
-      if (startRef.current.type === 'right') onResize({ dw: dx, dh: 0 });
-      else if (startRef.current.type === 'bottom') onResize({ dw: 0, dh: dy });
-      else if (startRef.current.type === 'corner') onResize({ dw: dx, dh: dy });
-    };
-
-    const handleUp = () => {
-      startRef.current = null;
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
-    };
-
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
-  }, [onResize]);
-
-  return (
-    <>
-      <div
-        className="resize-handle resize-handle-right"
-        onMouseDown={(e) => handleMouseDown(e, 'right')}
-      />
-      <div
-        className="resize-handle resize-handle-bottom"
-        onMouseDown={(e) => handleMouseDown(e, 'bottom')}
-      />
-      <div
-        className="resize-handle resize-handle-corner"
-        onMouseDown={(e) => handleMouseDown(e, 'corner')}
-      />
-    </>
-  );
-}
-
 function LiveWidget({ node }: { node: EditorComponent }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef<string | null>(null);
   const { dispatch, state } = useEditor();
   const isSelected = state.selectedId === node.name;
-  const [localDims, setLocalDims] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     const mjs = (window as any).MJS;
@@ -132,6 +82,7 @@ function LiveWidget({ node }: { node: EditorComponent }) {
       option: {
         ...node.option,
         ...(widgetStyles ? { styles: widgetStyles } : {}),
+        mode: 'editor',
       },
     };
 
@@ -150,46 +101,19 @@ function LiveWidget({ node }: { node: EditorComponent }) {
     };
   }, [node.name, node.type, JSON.stringify(node.option)]);
 
-  const handleResize = useCallback((delta: { dw: number; dh: number }) => {
-    setLocalDims((prev) => {
-      const cur = prev ?? {
-        width: containerRef.current?.offsetWidth ?? 300,
-        height: containerRef.current?.offsetHeight ?? 100,
-      };
-      const newW = Math.max(100, cur.width + delta.dw);
-      const newH = Math.max(60, cur.height + delta.dh);
-      return { width: newW, height: newH };
-    });
-  }, []);
-
-  useEffect(() => {
-    if (localDims) {
-      const timeout = setTimeout(() => {
-        dispatch({
-          type: 'RESIZE_COMPONENT',
-          payload: { id: node.name, dimensions: localDims },
-        });
-      }, 200);
-      return () => clearTimeout(timeout);
-    }
-  }, [localDims, node.name, dispatch]);
-
   const def = registryMap.get(node.type);
   const margin = node.option?.spacing?.margin ?? {};
-  const dims = node.option?.dimensions;
   const containerStyle: React.CSSProperties = {
     marginTop: margin.top ? `${margin.top}px` : undefined,
     marginRight: margin.right ? `${margin.right}px` : undefined,
     marginBottom: margin.bottom ? `${margin.bottom}px` : '8px',
     marginLeft: margin.left ? `${margin.left}px` : undefined,
-    width: localDims?.width ?? dims?.width ?? undefined,
-    minHeight: localDims?.height ?? dims?.height ?? undefined,
+    width: '100%',
   };
 
   return (
     <motion.div
-      ref={containerRef}
-      layout
+      layout="position"
       initial={{ opacity: 0, scale: 0.96, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: -8 }}
@@ -230,8 +154,6 @@ function LiveWidget({ node }: { node: EditorComponent }) {
       })()}
 
       <div ref={hostRef} style={{ minHeight: 60, padding: '0 8px 8px' }} />
-
-      {isSelected && <ResizeHandles onResize={handleResize} />}
     </motion.div>
   );
 }
@@ -256,7 +178,7 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
 
   return (
     <motion.div
-      layout
+      layout="position"
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -364,24 +286,6 @@ export function Preview() {
         </AnimatePresence>
       </div>
 
-      {state.tree.length > 0 && (
-        <details style={{ marginTop: 28 }}>
-          <summary style={{
-            fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)',
-            cursor: 'pointer', padding: '8px 0',
-          }}>
-            View Config JSON
-          </summary>
-          <pre style={{
-            background: '#0f172a', color: '#e2e8f0', padding: 16,
-            borderRadius: 'var(--radius-lg)', fontSize: 11,
-            overflow: 'auto', maxHeight: 300, lineHeight: 1.6,
-            border: '1px solid #1e293b',
-          }}>
-            {JSON.stringify(state.tree, null, 2)}
-          </pre>
-        </details>
-      )}
     </div>
   );
 }

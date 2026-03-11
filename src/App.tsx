@@ -203,7 +203,7 @@ function EditorShell() {
               <div className="canvas-dot-grid" />
               <div style={{
                 position: 'relative',
-                width: '1100px',
+                width: `${state.containerWidth}px`,
                 margin: '80px auto 400px',
                 padding: '40px',
               }}>
@@ -248,6 +248,25 @@ function EditorShell() {
           <button className="btn-toolbar" onClick={() => dispatch({ type: 'ADD_SECTION' })}>
             + Section
           </button>
+
+          <div className="toolbar-divider" />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {[960, 1100, 1280, 1440].map((w) => (
+              <button
+                key={w}
+                className="btn-toolbar"
+                onClick={() => dispatch({ type: 'SET_CONTAINER_WIDTH', payload: w })}
+                style={{
+                  fontSize: 10, padding: '3px 6px', minWidth: 0,
+                  ...(state.containerWidth === w ? { background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontWeight: 700 } : {}),
+                }}
+                title={`Set canvas width to ${w}px`}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
 
           <div className="toolbar-divider" />
 

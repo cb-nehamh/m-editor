@@ -34,6 +34,7 @@ export interface EditorState {
   activeSectionId: string;
   selectedId: string | null;
   tree: EditorComponent[];
+  containerWidth: number;
 }
 
 export interface SavedEditorConfig {
@@ -57,7 +58,8 @@ export type EditorAction =
   | { type: 'ADD_SECTION'; payload?: { layout?: LayoutType } }
   | { type: 'REMOVE_SECTION'; payload: string }
   | { type: 'SELECT_SECTION'; payload: string }
-  | { type: 'REORDER_SECTIONS'; payload: { fromIndex: number; toIndex: number } };
+  | { type: 'REORDER_SECTIONS'; payload: { fromIndex: number; toIndex: number } }
+  | { type: 'SET_CONTAINER_WIDTH'; payload: number };
 
 function createSection(layout: LayoutType = 'fullWidth'): LayoutSection {
   const def = LAYOUT_DEFS.find((l) => l.type === layout)!;
@@ -78,6 +80,7 @@ const initialState: EditorState = {
   activeSectionId: defaultSection.id,
   selectedId: null,
   tree: [],
+  containerWidth: 1100,
 };
 
 function setNestedValue(obj: Record<string, any>, path: string, value: any): Record<string, any> {
@@ -316,6 +319,9 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       sections.splice(toIndex, 0, moved);
       return { ...state, sections, tree: buildTree(sections) };
     }
+
+    case 'SET_CONTAINER_WIDTH':
+      return { ...state, containerWidth: Math.max(320, Math.min(2400, action.payload)) };
 
     case 'SET_TREE':
     case 'LOAD_CONFIG':

@@ -400,47 +400,6 @@ body {
 
 /* ===================== RESIZE HANDLES ===================== */
 
-.resize-handle {
-  position: absolute;
-  z-index: 10;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
-}
-
-.resize-handle-right {
-  right: -4px;
-  top: 10%;
-  width: 8px;
-  height: 80%;
-  cursor: ew-resize;
-  border-radius: 4px;
-}
-
-.resize-handle-bottom {
-  bottom: -4px;
-  left: 10%;
-  width: 80%;
-  height: 8px;
-  cursor: ns-resize;
-  border-radius: 4px;
-}
-
-.resize-handle-corner {
-  right: -5px;
-  bottom: -5px;
-  width: 12px;
-  height: 12px;
-  cursor: nwse-resize;
-  border-radius: 3px;
-  background: var(--color-primary);
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-}
-
-.resize-handle-right:hover,
-.resize-handle-bottom:hover {
-  background: rgba(59, 130, 246, 0.25);
-}
-
 /* ===================== DROP ZONE ===================== */
 
 .drop-zone {

@@ -7,12 +7,14 @@ export interface OptionField {
   default?: any;
   options?: { value: string; label: string }[];
   group?: string;
+  visibleWhen?: { variant?: string | string[] };
 }
 
 export interface FeatureToggle {
   key: string;
   label: string;
   default: boolean;
+  visibleWhen?: { variant?: string | string[] };
 }
 
 export interface VariantDef {
@@ -64,12 +66,15 @@ export const componentRegistry: ComponentDef[] = [
         ],
       },
       { key: 'enableFiltering', label: 'Enable Filtering', type: 'boolean', default: true },
+      { key: 'pageSize', label: 'Page Size', type: 'number', default: 10, group: 'Pagination' },
     ],
     features: [
       { key: 'showPayNow', label: 'Show Pay Now', default: true },
       { key: 'showDownload', label: 'Show Download', default: true },
       { key: 'showView', label: 'Show View', default: true },
-      { key: 'showExpandableRows', label: 'Expandable Rows', default: false },
+      { key: 'showExpandableRows', label: 'Expandable Rows', default: false, visibleWhen: { variant: 'detailed' } },
+      { key: 'showAccountSummary', label: 'Show Account Summary', default: true },
+      { key: 'showPagination', label: 'Show Pagination', default: true },
     ],
     styleKeys: [
       'container', 'summaryCard', 'summaryTitle', 'summaryAmount', 'payNowButton',
@@ -117,6 +122,7 @@ export const componentRegistry: ComponentDef[] = [
     ],
     features: [
       { key: 'showViewAction', label: 'Show View Action', default: true },
+      { key: 'showPagination', label: 'Show Pagination', default: true },
     ],
     styleKeys: [
       'container', 'table', 'tableHeader', 'tableRow', 'tableRowHover',
@@ -134,17 +140,23 @@ export const componentRegistry: ComponentDef[] = [
     variants: [],
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Subscription Details' },
+      { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '' },
     ],
     features: [
       { key: 'showPauseResume', label: 'Show Pause/Resume', default: true },
       { key: 'showCancelRenew', label: 'Show Cancel/Renew', default: true },
       { key: 'showEdit', label: 'Show Edit', default: true },
       { key: 'showShippingAddress', label: 'Show Shipping Address', default: true },
+      { key: 'showAddons', label: 'Show Add-ons', default: true },
+      { key: 'showSwitchPlan', label: 'Show Switch Plan', default: false },
+      { key: 'showProceedToPayment', label: 'Show Proceed to Payment', default: false },
+      { key: 'showTrialBanner', label: 'Show Trial Banner', default: false },
     ],
     styleKeys: [
       'container', 'heading', 'headerCard', 'statusBadge', 'detailRow',
       'detailLabel', 'detailValue', 'sectionTitle', 'addonRow',
       'actionButton', 'dangerButton', 'editButton', 'buttonRow', 'shippingSection',
+      'trialBanner', 'switchPlanButton', 'proceedToPaymentButton',
     ],
   },
   {
@@ -157,6 +169,7 @@ export const componentRegistry: ComponentDef[] = [
     variants: [],
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Invoice Details' },
+      { key: 'invoiceId', label: 'Invoice ID', type: 'string', default: '' },
     ],
     features: [
       { key: 'showDownload', label: 'Show Download', default: true },
@@ -184,6 +197,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showRemove', label: 'Show Remove', default: true },
       { key: 'allowRemoveDefault', label: 'Allow Remove Default', default: false },
       { key: 'showAddButton', label: 'Show Add Button', default: true },
+      { key: 'showStatus', label: 'Show Status Badge', default: true },
     ],
     styleKeys: [
       'container', 'heading', 'list', 'item', 'itemIcon', 'itemLabel',
@@ -208,6 +222,7 @@ export const componentRegistry: ComponentDef[] = [
         ],
       },
       { key: 'title', label: 'Title', type: 'string', default: 'Payment Method Details' },
+      { key: 'paymentSourceId', label: 'Payment Source ID', type: 'string', default: '' },
     ],
     features: [
       { key: 'showRemove', label: 'Show Remove', default: true },
@@ -274,7 +289,9 @@ export const componentRegistry: ComponentDef[] = [
         ],
       },
     ],
-    features: [],
+    features: [
+      { key: 'showEdit', label: 'Show Edit Button', default: true },
+    ],
     styleKeys: [],
   },
   {
@@ -285,9 +302,9 @@ export const componentRegistry: ComponentDef[] = [
     category: 'business',
     isContainer: false,
     variants: [
-      { value: 'compact', label: 'Compact' },
-      { value: 'standard', label: 'Standard' },
-      { value: 'detailed', label: 'Detailed' },
+      { value: 'allInvoices', label: 'All Invoices' },
+      { value: 'singleInvoice', label: 'Single Invoice' },
+      { value: 'staticChart', label: 'Static Chart' },
     ],
     options: [
       {
@@ -307,13 +324,17 @@ export const componentRegistry: ComponentDef[] = [
           { value: 'monthly', label: 'Monthly' },
         ],
       },
+      { key: 'invoiceId', label: 'Invoice ID', type: 'string', default: '', visibleWhen: { variant: ['singleInvoice', 'staticChart'] } },
+      { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '', visibleWhen: { variant: ['singleInvoice', 'staticChart'] } },
     ],
     features: [
-      { key: 'showChartTypeSelector', label: 'Chart Type Selector', default: true },
-      { key: 'showGranularitySelector', label: 'Granularity Selector', default: true },
-      { key: 'showItemFilter', label: 'Item Filter', default: true },
-      { key: 'showDataTable', label: 'Data Table', default: false },
-      { key: 'showTotalSummary', label: 'Total Summary', default: true },
+      { key: 'showChartTypeSelector', label: 'Chart Type Selector', default: true, visibleWhen: { variant: ['allInvoices', 'singleInvoice'] } },
+      { key: 'showGranularitySelector', label: 'Granularity Selector', default: true, visibleWhen: { variant: ['allInvoices', 'singleInvoice'] } },
+      { key: 'showItemFilter', label: 'Item Filter', default: true, visibleWhen: { variant: ['allInvoices', 'singleInvoice'] } },
+      { key: 'showDataTable', label: 'Data Table', default: false, visibleWhen: { variant: ['allInvoices', 'singleInvoice'] } },
+      { key: 'showTotalSummary', label: 'Total Summary', default: true, visibleWhen: { variant: ['allInvoices', 'singleInvoice'] } },
+      { key: 'showChart', label: 'Show Chart', default: true, visibleWhen: { variant: 'allInvoices' } },
+      { key: 'showHeader', label: 'Show Header', default: true },
     ],
     styleKeys: [
       'container', 'heading', 'invoiceSelector', 'controlsBar', 'controlButton',

@@ -1,7 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, findInAllSections } from '../state';
-import { registryMap, type OptionField } from '../component-registry';
+import { registryMap, type OptionField, type FeatureToggle } from '../component-registry';
+
+function isVisibleForVariant(item: { visibleWhen?: { variant?: string | string[] } }, currentVariant: string | undefined): boolean {
+  if (!item.visibleWhen?.variant) return true;
+  const allowed = item.visibleWhen.variant;
+  if (Array.isArray(allowed)) return !currentVariant || allowed.includes(currentVariant);
+  return !currentVariant || allowed === currentVariant;
+}
 
 export function ConfigForm({ onClose }: { onClose?: () => void }) {
   const { state, dispatch } = useEditor();
@@ -122,45 +129,53 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
           </FormSection>
 
           {/* Options */}
-          {def.options.length > 0 && (
-            <div>
-              <SectionLabel>Options</SectionLabel>
-              {def.options.map((field) => (
-                <OptionFieldInput
-                  key={field.key}
-                  field={field}
-                  value={option[field.key]}
-                  onChange={(val) => updateOption(field.key, val)}
-                />
-              ))}
-            </div>
-          )}
+          {def.options.length > 0 && (() => {
+            const currentVariant = option.variant ?? def.variants?.[0]?.value;
+            const visibleOptions = def.options.filter((f) => isVisibleForVariant(f, currentVariant));
+            return visibleOptions.length > 0 ? (
+              <div>
+                <SectionLabel>Options</SectionLabel>
+                {visibleOptions.map((field) => (
+                  <OptionFieldInput
+                    key={field.key}
+                    field={field}
+                    value={option[field.key]}
+                    onChange={(val) => updateOption(field.key, val)}
+                  />
+                ))}
+              </div>
+            ) : null;
+          })()}
 
           {/* Features */}
-          {def.features.length > 0 && (
-            <div>
-              <SectionLabel>Features</SectionLabel>
-              {def.features.map((feat) => {
-                const checked = option.features?.[feat.key] ?? feat.default;
-                return (
-                  <label key={feat.key} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '5px 0', cursor: 'pointer',
-                  }}>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{feat.label}</span>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => updateOption(`features.${feat.key}`, e.target.checked)}
-                      />
-                      <span className="toggle-slider" />
+          {def.features.length > 0 && (() => {
+            const currentVariant = option.variant ?? def.variants?.[0]?.value;
+            const visibleFeatures = def.features.filter((f) => isVisibleForVariant(f, currentVariant));
+            return visibleFeatures.length > 0 ? (
+              <div>
+                <SectionLabel>Features</SectionLabel>
+                {visibleFeatures.map((feat) => {
+                  const checked = option.features?.[feat.key] ?? feat.default;
+                  return (
+                    <label key={feat.key} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '5px 0', cursor: 'pointer',
+                    }}>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{feat.label}</span>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => updateOption(`features.${feat.key}`, e.target.checked)}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
                     </label>
-                  </label>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            ) : null;
+          })()}
 
           {/* Spacing */}
           <div>
