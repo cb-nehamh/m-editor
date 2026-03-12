@@ -49,6 +49,22 @@ export interface PortalSessionResponse {
   customer_id: string;
 }
 
+export function saveToChargebeeApp(params: {
+  cbId: string | null;
+  configId: string;
+  status: 'draft' | 'published';
+  cbOrigin: string;
+}): void {
+  const { cbId, configId, status, cbOrigin } = params;
+  const qs = new URLSearchParams({
+    save: 'true',
+    configId,
+    status,
+  });
+  if (cbId) qs.set('cbId', cbId);
+  window.location.href = `${cbOrigin}/magnum_editor?${qs.toString()}`;
+}
+
 export async function createPortalSession(
   domain: string,
   customerId: string

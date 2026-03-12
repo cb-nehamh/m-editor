@@ -18,7 +18,7 @@ import { Sidebar } from './components/Sidebar';
 import { ConfigForm } from './components/ConfigForm';
 import { Preview } from './components/Preview';
 import { registryMap } from './component-registry';
-import { saveConfig, fetchConfig } from './api';
+import { saveConfig, fetchConfig, saveToChargebeeApp } from './api';
 
 const DEFAULT_DOMAIN = 'yash-pc2-test';
 
@@ -61,6 +61,9 @@ function EditorShell() {
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
   const configId = searchParams.get('id') || '';
+  const cbId = searchParams.get('cbId') || '';
+  const csrfToken = searchParams.get('csrfToken') || '';
+  const cbOrigin = searchParams.get('cbOrigin') || '';
 
   useEffect(() => {
     if (!configId) return;
@@ -206,7 +209,7 @@ function EditorShell() {
   );
 
   async function handleSave(status: 'draft' | 'published') {
-    const id = configId || crypto.randomUUID();
+    const id = configId || (crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''));
 
     setSaving(true);
     try {
@@ -214,8 +217,19 @@ function EditorShell() {
       await saveConfig(domain, id, [configPayload] as any, status);
       setConfigStatus(status);
       if (!configId) {
-        setSearchParams({ domain, id });
+        setSearchParams({ domain, id, ...(cbId && { cbId }), ...(csrfToken && { csrfToken }), ...(cbOrigin && { cbOrigin }) });
       }
+
+      if (cbOrigin) {
+        saveToChargebeeApp({
+          cbId: cbId || null,
+          configId: id,
+          status,
+          cbOrigin,
+        });
+        return;
+      }
+
       showToast(status === 'published' ? 'Published!' : 'Draft saved!');
     } catch (err) {
       console.error('Save failed:', err);

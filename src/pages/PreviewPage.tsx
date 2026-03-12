@@ -12,7 +12,6 @@ const DEFAULT_DOMAIN = 'yash-pc2-test';
 export function PreviewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
   const configId = searchParams.get('id') || '';
 
   const [customer, setCustomer] = useState(CUSTOMERS[0]);
@@ -40,7 +39,7 @@ export function PreviewPage() {
     }
 
     setConfigLoading(true);
-    fetchConfig(domain, configId)
+    fetchConfig(DEFAULT_DOMAIN, configId)
       .then((res) => {
         if (res) {
           const raw = res.config as any;
@@ -58,7 +57,7 @@ export function PreviewPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setConfigLoading(false));
-  }, [domain, configId]);
+  }, [configId]);
 
   const generateTokenAndMount = useCallback(async (customerId: string) => {
     if (!config) return;
@@ -68,7 +67,7 @@ export function PreviewPage() {
     setError(null);
 
     try {
-      const session = await createPortalSession(domain, customerId);
+      const session = await createPortalSession(DEFAULT_DOMAIN, customerId);
 
       if (gen !== mountGenRef.current) return;
 
@@ -85,7 +84,7 @@ export function PreviewPage() {
       }
 
       mjs.loadPortalComponent('#preview-portal-host', config, {
-        domain,
+        domain: DEFAULT_DOMAIN,
         token: session.token,
       });
     } catch (err: any) {
@@ -93,7 +92,7 @@ export function PreviewPage() {
       setTokenLoading(false);
       setError(`Failed to create session for ${customerId}: ${err.message}`);
     }
-  }, [config, domain]);
+  }, [config]);
 
   useEffect(() => {
     if (config) {
