@@ -106,11 +106,15 @@ function EditorShell() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const scaleModifier: Modifier = useCallback(({ transform }) => ({
-    ...transform,
-    x: transform.x / canvasScale,
-    y: transform.y / canvasScale,
-  }), [canvasScale]);
+  const scaleModifier: Modifier = useCallback(({ transform, active }) => {
+    const isReorder = !!active?.data?.current?.componentName;
+    if (!isReorder) return transform;
+    return {
+      ...transform,
+      x: transform.x / canvasScale,
+      y: transform.y / canvasScale,
+    };
+  }, [canvasScale]);
 
   const handleDragStart = useCallback((e: DragStartEvent) => {
     const type = e.active.data.current?.type as string | undefined;
@@ -284,6 +288,27 @@ function EditorShell() {
           <span className={`badge ${configStatus === 'published' ? 'badge-published' : 'badge-draft'}`}>
             {configStatus}
           </span>
+
+          {configId && (
+            <>
+              <div className="toolbar-divider" />
+              <span
+                style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace', cursor: 'pointer' }}
+                title={configId}
+                onClick={() => { navigator.clipboard.writeText(configId); showToast('Config ID copied!'); }}
+              >
+                {configId.length > 12 ? `${configId.slice(0, 12)}...` : configId}
+              </span>
+              <button
+                className="btn-toolbar"
+                onClick={() => { navigator.clipboard.writeText(configId); showToast('Config ID copied!'); }}
+                title="Copy config ID"
+                style={{ fontSize: 11, padding: '2px 5px', minWidth: 0 }}
+              >
+                &#x2398;
+              </button>
+            </>
+          )}
 
           <div className="toolbar-divider" />
 
