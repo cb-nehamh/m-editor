@@ -154,6 +154,16 @@ function LiveWidget({ node }: { node: EditorComponent }) {
       })()}
 
       <div ref={hostRef} style={{ minHeight: 60, padding: '0 8px 8px' }} />
+
+      {node.option?.defaultVisible === false && (
+        <div style={{
+          padding: '6px 12px', margin: '0 8px 8px',
+          background: '#fef3c7', border: '1px solid #fde68a',
+          borderRadius: 6, fontSize: 11, color: '#92400e',
+        }}>
+          Hidden by default &mdash; will show when it receives a visibility message
+        </div>
+      )}
     </motion.div>
   );
 }

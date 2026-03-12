@@ -345,6 +345,14 @@ export const componentRegistry: ComponentDef[] = [
   },
 ];
 
+const sharedOptions: OptionField[] = [
+  { key: 'defaultVisible', label: 'Visible by Default', type: 'boolean', default: true },
+];
+
+for (const def of componentRegistry) {
+  def.options = [...def.options, ...sharedOptions];
+}
+
 export const registryMap = new Map<string, ComponentDef>(
   componentRegistry.map((c) => [c.id, c])
 );
