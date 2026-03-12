@@ -100,7 +100,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showPayNow', label: 'Show Pay Now', default: true },
       { key: 'showDownload', label: 'Show Download', default: true },
       { key: 'showView', label: 'Show View', default: true },
-      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
+      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['detailed'] } },
       { key: 'showAccountSummary', label: 'Show Account Summary', default: true },
       { key: 'showPagination', label: 'Show Pagination', default: true },
     ],
@@ -192,7 +192,7 @@ export const componentRegistry: ComponentDef[] = [
     features: [
       { key: 'showViewAction', label: 'Show View Action', default: true },
       { key: 'showPagination', label: 'Show Pagination', default: true },
-      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
+      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['detailed'] } },
     ],
     styleKeys: [
       'container', 'table', 'tableHeader', 'tableRow', 'tableRowHover',
@@ -224,6 +224,10 @@ export const componentRegistry: ComponentDef[] = [
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Subscription Details' },
       { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '' },
+      { key: 'defaultMode', label: 'Default Mode', type: 'select', default: 'details', options: [
+        { value: 'details', label: 'Details View' },
+        { value: 'edit', label: 'Edit Subscription' },
+      ]},
       {
         key: 'shippingAddressFields', label: 'Shipping Fields', type: 'multiselect',
         default: ['first_name', 'last_name', 'phone', 'company', 'line1', 'line2', 'city', 'state_code', 'zip', 'country'],

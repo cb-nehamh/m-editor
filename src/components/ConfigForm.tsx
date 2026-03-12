@@ -126,26 +126,26 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
           </div>
 
           {/* Variant */}
-          {def.variants && def.variants.length > 0 && (
-            <FormSection label="Variant">
-              <select
-                value={option.variant ?? def.variants[0].value}
-                onChange={(e) => updateOption('variant', e.target.value)}
+      {def.variants && def.variants.length > 0 && (
+        <FormSection label="Variant">
+          <select
+            value={option.variant ?? def.variants[0].value}
+            onChange={(e) => updateOption('variant', e.target.value)}
                 className="select"
                 style={{ fontSize: 12 }}
-              >
-                {def.variants.map((v) => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
-                ))}
-              </select>
-            </FormSection>
-          )}
+          >
+            {def.variants.map((v) => (
+              <option key={v.value} value={v.value}>{v.label}</option>
+            ))}
+          </select>
+        </FormSection>
+      )}
 
           <Divider />
 
           {/* Options (grouped) */}
           {visibleOptions.length > 0 && (
-            <div>
+        <div>
               <SectionLabel>Options</SectionLabel>
               {Array.from(optionGroups.entries()).map(([groupName, fields]) => (
                 <div key={groupName}>
@@ -158,29 +158,29 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                     }}>{groupName}</div>
                   )}
                   {fields.map((field) => (
-                    <OptionFieldInput
-                      key={field.key}
-                      field={field}
-                      value={option[field.key]}
-                      onChange={(val) => updateOption(field.key, val)}
-                    />
+            <OptionFieldInput
+              key={field.key}
+              field={field}
+              value={option[field.key]}
+              onChange={(val) => updateOption(field.key, val)}
+            />
                   ))}
                 </div>
-              ))}
-            </div>
-          )}
+          ))}
+        </div>
+      )}
 
-          {/* Features */}
+      {/* Features */}
           {visibleFeatures.length > 0 && (
-            <div>
+        <div>
               <SectionLabel>Features</SectionLabel>
               <div style={{
                 background: 'var(--color-surface-alt)', borderRadius: 'var(--radius-sm)',
                 padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 1,
               }}>
                 {visibleFeatures.map((feat) => {
-                  const checked = option.features?.[feat.key] ?? feat.default;
-                  return (
+            const checked = option.features?.[feat.key] ?? feat.default;
+            return (
                     <label key={feat.key} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '5px 6px', cursor: 'pointer', borderRadius: 4,
@@ -191,17 +191,17 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                     >
                       <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{feat.label}</span>
                       <label className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => updateOption(`features.${feat.key}`, e.target.checked)}
-                        />
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => updateOption(`features.${feat.key}`, e.target.checked)}
+                />
                         <span className="toggle-slider" />
                       </label>
-                    </label>
-                  );
-                })}
-              </div>
+              </label>
+            );
+          })}
+        </div>
             </div>
           )}
 
@@ -244,39 +244,39 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
           <Divider />
 
           {/* Spacing -- visual box model */}
-          <div>
+      <div>
             <SectionLabel>Spacing</SectionLabel>
             <BoxModelEditor
-              label="Margin"
-              prefix="spacing.margin"
-              values={option.spacing?.margin ?? {}}
-              onChange={updateOption}
+          label="Margin"
+          prefix="spacing.margin"
+          values={option.spacing?.margin ?? {}}
+          onChange={updateOption}
               color="#f59e0b"
-            />
-          </div>
+        />
+      </div>
 
           <Divider />
 
-          {/* Title */}
-          <div>
+      {/* Title */}
+      <div>
             <SectionLabel>Title</SectionLabel>
-            <FormSection label="Title Text">
-              <input
-                type="text"
+        <FormSection label="Title Text">
+          <input
+            type="text"
                 value={option.titleText ?? ''}
                 placeholder={def.label}
-                onChange={(e) => updateOption('titleText', e.target.value)}
+            onChange={(e) => updateOption('titleText', e.target.value)}
                 className="input"
                 style={{ fontSize: 12 }}
-              />
-            </FormSection>
-            <StyleEditor
-              label="Title Styling"
-              styleKey="heading"
-              styles={option.styles ?? {}}
-              onChange={updateOption}
-            />
-          </div>
+          />
+        </FormSection>
+        <StyleEditor
+          label="Title Styling"
+          styleKey="heading"
+          styles={option.styles ?? {}}
+          onChange={updateOption}
+        />
+      </div>
 
           {/* Element Styling -- collapsible Advanced */}
           {elementStyleKeys.length > 0 && (
@@ -290,19 +290,19 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                 <StyleEditor key={sk} label={camelToTitle(sk)} styleKey={sk} styles={option.styles ?? {}} onChange={updateOption} />
               ))}
             </CollapsibleSection>
-          )}
+      )}
 
-          {/* Danger zone */}
+      {/* Danger zone */}
           <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--color-danger-border)' }}>
             <motion.button
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => dispatch({ type: 'REMOVE_COMPONENT', payload: selectedId })}
+          onClick={() => dispatch({ type: 'REMOVE_COMPONENT', payload: selectedId })}
               className="btn btn-danger"
               style={{ width: '100%', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
+        >
               <Trash2 size={13} />
-              Remove Component
+          Remove Component
             </motion.button>
           </div>
         </motion.div>
@@ -529,7 +529,7 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
         </motion.span>
       </button>
       <AnimatePresence>
-        {open && (
+      {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -538,39 +538,39 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
             style={{ overflow: 'hidden' }}
           >
             <div style={{ padding: '7px 10px', display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
+          <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 3 }}>Color</div>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <input
-                    type="color"
-                    value={current.color || '#1e293b'}
-                    onChange={(e) => onChange(`styles.${styleKey}.color`, e.target.value)}
+              <input
+                type="color"
+                value={current.color || '#1e293b'}
+                onChange={(e) => onChange(`styles.${styleKey}.color`, e.target.value)}
                     style={{ width: 26, height: 26, border: '1px solid var(--color-border)', borderRadius: 4, padding: 0, cursor: 'pointer' }}
-                  />
-                  <input
-                    type="text"
-                    value={current.color || ''}
-                    onChange={(e) => onChange(`styles.${styleKey}.color`, e.target.value)}
-                    placeholder="#1e293b"
+              />
+              <input
+                type="text"
+                value={current.color || ''}
+                onChange={(e) => onChange(`styles.${styleKey}.color`, e.target.value)}
+                placeholder="#1e293b"
                     className="input"
                     style={{ flex: 1, padding: '3px 6px', fontSize: 10, fontFamily: 'monospace' }}
-                  />
-                </div>
-              </div>
+              />
+            </div>
+          </div>
               <div style={{ width: 60 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 3 }}>Size</div>
-                <input
+            <input
                   type="number" min={8} max={72}
-                  value={current.fontSize || ''}
-                  onChange={(e) => onChange(`styles.${styleKey}.fontSize`, e.target.value ? Number(e.target.value) : '')}
-                  placeholder="14"
+              value={current.fontSize || ''}
+              onChange={(e) => onChange(`styles.${styleKey}.fontSize`, e.target.value ? Number(e.target.value) : '')}
+              placeholder="14"
                   className="input"
                   style={{ textAlign: 'center', padding: '3px 4px', fontSize: 10 }}
-                />
-              </div>
-            </div>
+            />
+          </div>
+        </div>
           </motion.div>
-        )}
+      )}
       </AnimatePresence>
     </div>
   );
@@ -660,19 +660,19 @@ function BoxModelEditor({ label, prefix, values, onChange, color }: {
 function BoxInput({ value, onChange, label }: {
   value: number; onChange: (v: number) => void; label: string;
 }) {
-  return (
+          return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2 }}>
-      <input
-        type="number"
-        min={0}
+              <input
+                type="number"
+                min={0}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{
+                style={{
           width: 36, textAlign: 'center', padding: '3px 2px',
           fontSize: 11, fontWeight: 600,
           border: '1px solid var(--color-border)',
           borderRadius: 4, background: '#fff',
-          outline: 'none',
+                  outline: 'none',
           fontFamily: 'var(--font-sans)',
         }}
         title={label}
@@ -782,10 +782,10 @@ function ClickActionsSection({ actions, option, selectedId, onChange }: {
                       >
                         {df.label}
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
+          );
+        })}
+      </div>
+    </div>
             )}
           </div>
         );
@@ -883,7 +883,7 @@ function ButtonActionsSection({ actions, option, selectedId, onChange }: {
                 <>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '3px 0',
+  padding: '3px 0',
                 }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Send Visibility</span>
                   <label className="toggle-switch">
