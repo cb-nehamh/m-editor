@@ -260,6 +260,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showScheduledChanges', label: 'Show Scheduled Changes', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
       { key: 'showEntitledFeatures', label: 'Show Entitled Features', default: true, visibleWhen: { variant: ['detailed'] } },
       { key: 'showSkip', label: 'Show Skip Delivery', default: false },
+      { key: 'showBackToDetails', label: 'Show Back to Details Link', default: true },
     ],
     styleKeys: [
       'container', 'heading', 'headerCard', 'statusBadge', 'detailRow',
