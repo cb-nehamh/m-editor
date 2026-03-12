@@ -56,6 +56,7 @@ function EditorShell() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const canvasWrapperRef = useRef<any>(null);
   const [canvasScale, setCanvasScale] = useState(0.85);
+  const [isDraggingReorder, setIsDraggingReorder] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
@@ -119,11 +120,13 @@ function EditorShell() {
   const handleDragStart = useCallback((e: DragStartEvent) => {
     const type = e.active.data.current?.type as string | undefined;
     if (type) setDraggedType(type);
+    if (e.active.data.current?.componentName) setIsDraggingReorder(true);
   }, []);
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
       setDraggedType(null);
+      setIsDraggingReorder(false);
       if (!e.over) return;
 
       const activeData = e.active.data.current ?? {};
@@ -244,8 +247,8 @@ function EditorShell() {
           centerOnInit={false}
           initialPositionX={-450}
           initialPositionY={-40}
-          wheel={{ step: 0.08 }}
-          panning={{ velocityDisabled: true, excluded: ['input', 'textarea', 'select', 'button', 'no-pan'] }}
+          wheel={{ step: 0.08, disabled: isDraggingReorder }}
+          panning={{ velocityDisabled: true, disabled: isDraggingReorder, excluded: ['input', 'textarea', 'select', 'button', 'no-pan'] }}
           doubleClick={{ disabled: true }}
           limitToBounds={false}
           onTransformed={(_ref, state) => setCanvasScale(state.scale)}
