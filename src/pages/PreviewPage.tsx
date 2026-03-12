@@ -135,7 +135,7 @@ export function PreviewPage() {
             &larr; Back to Editor
           </button>
           <h1 style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-            Portal Preview
+            EL-UI Preview
           </h1>
           {configId && (
             <span style={{

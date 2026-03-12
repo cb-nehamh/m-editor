@@ -375,7 +375,7 @@ export function Preview() {
       }}>
         <div>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
-            Page Builder
+            EL-UI Builder
           </h3>
           <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
             {state.sections.length} section{state.sections.length !== 1 ? 's' : ''} &middot; {totalComponents} component{totalComponents !== 1 ? 's' : ''}

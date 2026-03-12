@@ -281,12 +281,12 @@ function EditorShell() {
           
         >
           <div style={{
-            width: 20, height: 20,
             background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
             borderRadius: 5,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 9, fontWeight: 800, color: '#fff', flexShrink: 0,
-          }}>M</div>
+            padding: '3px 7px',
+            fontSize: 9, fontWeight: 800, color: '#fff', flexShrink: 0, letterSpacing: '0.5px',
+          }}>EL-UI</div>
 
           <span className={`badge ${configStatus === 'published' ? 'badge-published' : 'badge-draft'}`}>
             {configStatus}
