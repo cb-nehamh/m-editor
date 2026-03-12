@@ -148,7 +148,7 @@ export const componentRegistry: ComponentDef[] = [
     category: 'business',
     isContainer: false,
     variants: [
-      { value: 'compact', label: 'Compact' },
+      { value: 'compact', label: 'Card View' },
       { value: 'standard', label: 'Standard' },
       { value: 'detailed', label: 'Detailed' },
     ],
