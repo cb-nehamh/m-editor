@@ -220,14 +220,14 @@ function EditorShell() {
           initial={{ y: -60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
-          style={{ maxWidth: 'calc(100vw - 32px)' }}
+          
         >
           <div style={{
-            width: 22, height: 22,
+            width: 20, height: 20,
             background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
             borderRadius: 5,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0,
+            fontSize: 9, fontWeight: 800, color: '#fff', flexShrink: 0,
           }}>M</div>
 
           <span className={`badge ${configStatus === 'published' ? 'badge-published' : 'badge-draft'}`}>
@@ -251,15 +251,15 @@ function EditorShell() {
 
           <div className="toolbar-divider" />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {[960, 1100, 1280, 1440].map((w) => (
               <button
                 key={w}
                 className="btn-toolbar"
                 onClick={() => dispatch({ type: 'SET_CONTAINER_WIDTH', payload: w })}
                 style={{
-                  fontSize: 10, padding: '3px 6px', minWidth: 0,
-                  ...(state.containerWidth === w ? { background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontWeight: 700 } : {}),
+                  fontSize: 10, padding: '3px 5px', minWidth: 0,
+                  ...(state.containerWidth === w ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontWeight: 700 } : {}),
                 }}
                 title={`Set canvas width to ${w}px`}
               >

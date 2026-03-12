@@ -222,17 +222,22 @@ body {
   z-index: 200;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: rgba(15, 23, 42, 0.92);
+  gap: 5px;
+  padding: 5px 10px;
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.2),
     0 16px 40px rgba(0, 0, 0, 0.15);
   color: #fff;
+  white-space: nowrap;
+}
+
+.floating-toolbar-top > * {
+  flex-shrink: 0;
 }
 
 /* Bottom zoom controls */
@@ -609,14 +614,15 @@ body {
 }
 
 .btn-toolbar {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
+  white-space: nowrap;
   transition: all var(--transition-fast);
   font-family: var(--font-sans);
 }
@@ -659,8 +665,8 @@ body {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  font-size: 10px;
+  padding: 2px 8px;
+  font-size: 9px;
   font-weight: 700;
   border-radius: 20px;
   text-transform: uppercase;
@@ -718,9 +724,9 @@ body {
 
 .toolbar-divider {
   width: 1px;
-  height: 20px;
+  height: 18px;
   background: rgba(255, 255, 255, 0.12);
-  margin: 0 4px;
+  margin: 0 2px;
 }
 
 /* ===================== PALETTE ITEM ===================== */
