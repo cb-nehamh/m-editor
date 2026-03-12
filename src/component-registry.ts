@@ -1,3 +1,9 @@
+import React from 'react';
+import {
+  Receipt, Repeat, FileText, FileSpreadsheet, CreditCard,
+  Wallet, MapPin, UserCircle, BarChart3,
+} from 'lucide-react';
+
 export type FieldType = 'string' | 'number' | 'boolean' | 'select' | 'json' | 'multiselect';
 
 export interface OptionField {
@@ -26,7 +32,7 @@ export interface ComponentDef {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  icon: React.ReactNode;
   category: 'business';
   isContainer: boolean;
   regions?: string[];
@@ -41,7 +47,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'billingHistory',
     label: 'Billing History',
     description: 'Invoice table with filters, pagination, and actions',
-    icon: '\uD83D\uDCCB',
+    icon: React.createElement(Receipt, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [
@@ -87,7 +93,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'subscriptionList',
     label: 'Subscription List',
     description: 'Subscription table with status filters and pagination',
-    icon: '\uD83D\uDD04',
+    icon: React.createElement(Repeat, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [
@@ -134,7 +140,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'subscriptionDetails',
     label: 'Subscription Details',
     description: 'Single subscription detail card with actions',
-    icon: '\uD83D\uDCC4',
+    icon: React.createElement(FileText, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [],
@@ -163,7 +169,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'invoiceDetails',
     label: 'Invoice Details',
     description: 'Single invoice detail with line items and totals',
-    icon: '\uD83E\uDDFE',
+    icon: React.createElement(FileSpreadsheet, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [],
@@ -186,7 +192,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'paymentMethodList',
     label: 'Payment Method List',
     description: 'List of saved payment methods with add/remove',
-    icon: '\uD83D\uDCB3',
+    icon: React.createElement(CreditCard, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [],
@@ -209,7 +215,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'paymentMethodDetails',
     label: 'Payment Method Details',
     description: 'Single payment method detail or add form',
-    icon: '\uD83D\uDCB3',
+    icon: React.createElement(Wallet, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [],
@@ -237,7 +243,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'billingAddress',
     label: 'Billing Address',
     description: 'Address form with display/edit modes and field groups',
-    icon: '\uD83C\uDFE0',
+    icon: React.createElement(MapPin, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [
@@ -263,7 +269,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'accountDetails',
     label: 'Account Details',
     description: 'Customer account form with display/edit modes',
-    icon: '\uD83D\uDC64',
+    icon: React.createElement(UserCircle, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [
@@ -298,7 +304,7 @@ export const componentRegistry: ComponentDef[] = [
     id: 'usage',
     label: 'Usage',
     description: 'Metered usage charts with granularity and item filters',
-    icon: '\uD83D\uDCCA',
+    icon: React.createElement(BarChart3, { size: 16 }),
     category: 'business',
     isContainer: false,
     variants: [

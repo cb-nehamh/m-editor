@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, LAYOUT_DEFS, type EditorComponent, type LayoutSection } from '../state';
@@ -63,6 +63,11 @@ function LiveWidget({ node }: { node: EditorComponent }) {
   const { dispatch, state } = useEditor();
   const isSelected = state.selectedId === node.name;
 
+  const mountOptionKey = useMemo(() => {
+    const { spacing, ...rest } = (node.option ?? {}) as any;
+    return JSON.stringify({ name: node.name, type: node.type, ...rest });
+  }, [node.name, node.type, node.option]);
+
   useEffect(() => {
     const mjs = (window as any).MJS;
     if (!mjs || !hostRef.current) return;
@@ -99,7 +104,7 @@ function LiveWidget({ node }: { node: EditorComponent }) {
         mountedRef.current = null;
       }
     };
-  }, [node.name, node.type, JSON.stringify(node.option)]);
+  }, [mountOptionKey]);
 
   const def = registryMap.get(node.type);
   const margin = node.option?.spacing?.margin ?? {};
@@ -109,6 +114,7 @@ function LiveWidget({ node }: { node: EditorComponent }) {
     marginBottom: margin.bottom ? `${margin.bottom}px` : '8px',
     marginLeft: margin.left ? `${margin.left}px` : undefined,
     width: '100%',
+    transition: 'margin 0.2s ease',
   };
 
   return (
@@ -260,7 +266,7 @@ export function Preview() {
   );
 
   return (
-    <div className="no-pan">
+    <div>
       <div className="demo-banner">
         <span style={{ fontSize: 14 }}>&#x26A0;</span>
         <span><strong>Demo data</strong> &mdash; components display sample data in the editor. Use <strong>Preview</strong> to see real customer data.</span>

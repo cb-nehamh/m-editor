@@ -2,12 +2,24 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, findInAllSections } from '../state';
 import { registryMap, type OptionField, type FeatureToggle } from '../component-registry';
+import { ChevronDown, Paintbrush, Trash2 } from 'lucide-react';
 
 function isVisibleForVariant(item: { visibleWhen?: { variant?: string | string[] } }, currentVariant: string | undefined): boolean {
   if (!item.visibleWhen?.variant) return true;
   const allowed = item.visibleWhen.variant;
   if (Array.isArray(allowed)) return !currentVariant || allowed.includes(currentVariant);
   return !currentVariant || allowed === currentVariant;
+}
+
+function groupBy<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const item of items) {
+    const key = keyFn(item);
+    const group = map.get(key) ?? [];
+    group.push(item);
+    map.set(key, group);
+  }
+  return map;
 }
 
 export function ConfigForm({ onClose }: { onClose?: () => void }) {
@@ -63,6 +75,13 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
     dispatch({ type: 'UPDATE_OPTION', payload: { id: selectedId, path, value } });
   };
 
+  const currentVariant = option.variant ?? def.variants?.[0]?.value;
+  const visibleOptions = def.options.filter((f) => isVisibleForVariant(f, currentVariant));
+  const visibleFeatures = def.features.filter((f) => isVisibleForVariant(f, currentVariant));
+  const elementStyleKeys = def.styleKeys.filter((sk) => sk !== 'heading');
+
+  const optionGroups = groupBy(visibleOptions, (f) => f.group ?? '');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="floating-panel-header">
@@ -89,14 +108,14 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
             borderBottom: '1px solid var(--color-border)',
           }}>
             <span style={{
-              fontSize: 20, width: 36, height: 36,
+              width: 36, height: 36,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--color-primary-light)',
-              borderRadius: 8,
+              borderRadius: 8, color: 'var(--color-primary)',
             }}>{def.icon}</span>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>{def.label}</h3>
-              <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>{node.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</div>
             </div>
           </div>
 
@@ -116,51 +135,54 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
             </FormSection>
           )}
 
-          {/* Region */}
-          <FormSection label="Region">
-            <input
-              type="text"
-              value={option.region ?? 'main'}
-              onChange={(e) => updateOption('region', e.target.value)}
-              className="input"
-              style={{ fontSize: 12 }}
-              placeholder="main, sidebar, content, left, right"
-            />
-          </FormSection>
+          <Divider />
 
-          {/* Options */}
-          {def.options.length > 0 && (() => {
-            const currentVariant = option.variant ?? def.variants?.[0]?.value;
-            const visibleOptions = def.options.filter((f) => isVisibleForVariant(f, currentVariant));
-            return visibleOptions.length > 0 ? (
-              <div>
-                <SectionLabel>Options</SectionLabel>
-                {visibleOptions.map((field) => (
-                  <OptionFieldInput
-                    key={field.key}
-                    field={field}
-                    value={option[field.key]}
-                    onChange={(val) => updateOption(field.key, val)}
-                  />
-                ))}
-              </div>
-            ) : null;
-          })()}
+          {/* Options (grouped) */}
+          {visibleOptions.length > 0 && (
+            <div>
+              <SectionLabel>Options</SectionLabel>
+              {Array.from(optionGroups.entries()).map(([groupName, fields]) => (
+                <div key={groupName}>
+                  {groupName && (
+                    <div style={{
+                      fontSize: 10, fontWeight: 600, color: 'var(--color-primary)',
+                      marginTop: 10, marginBottom: 4,
+                      padding: '3px 8px', background: 'var(--color-primary-light)',
+                      borderRadius: 4, display: 'inline-block',
+                    }}>{groupName}</div>
+                  )}
+                  {fields.map((field) => (
+                    <OptionFieldInput
+                      key={field.key}
+                      field={field}
+                      value={option[field.key]}
+                      onChange={(val) => updateOption(field.key, val)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Features */}
-          {def.features.length > 0 && (() => {
-            const currentVariant = option.variant ?? def.variants?.[0]?.value;
-            const visibleFeatures = def.features.filter((f) => isVisibleForVariant(f, currentVariant));
-            return visibleFeatures.length > 0 ? (
-              <div>
-                <SectionLabel>Features</SectionLabel>
+          {visibleFeatures.length > 0 && (
+            <div>
+              <SectionLabel>Features</SectionLabel>
+              <div style={{
+                background: 'var(--color-surface-alt)', borderRadius: 'var(--radius-sm)',
+                padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 1,
+              }}>
                 {visibleFeatures.map((feat) => {
                   const checked = option.features?.[feat.key] ?? feat.default;
                   return (
                     <label key={feat.key} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '5px 0', cursor: 'pointer',
-                    }}>
+                      padding: '5px 6px', cursor: 'pointer', borderRadius: 4,
+                      transition: 'background 0.1s',
+                    }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.7)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
                       <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{feat.label}</span>
                       <label className="toggle-switch">
                         <input
@@ -174,19 +196,24 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                   );
                 })}
               </div>
-            ) : null;
-          })()}
+            </div>
+          )}
 
-          {/* Spacing */}
+          <Divider />
+
+          {/* Spacing -- visual box model */}
           <div>
             <SectionLabel>Spacing</SectionLabel>
-            <SpacingGroup
+            <BoxModelEditor
               label="Margin"
               prefix="spacing.margin"
               values={option.spacing?.margin ?? {}}
               onChange={updateOption}
+              color="#f59e0b"
             />
           </div>
+
+          <Divider />
 
           {/* Title */}
           <div>
@@ -208,16 +235,18 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
             />
           </div>
 
-          {/* Element Styling */}
-          {def.styleKeys.length > 0 && (
-            <div>
-              <SectionLabel>Element Styling</SectionLabel>
-              {def.styleKeys
-                .filter((sk) => sk !== 'heading')
-                .map((sk) => (
-                  <StyleEditor key={sk} label={camelToTitle(sk)} styleKey={sk} styles={option.styles ?? {}} onChange={updateOption} />
-                ))}
-            </div>
+          {/* Element Styling -- collapsible Advanced */}
+          {elementStyleKeys.length > 0 && (
+            <CollapsibleSection
+              title="Advanced Styling"
+              icon={<Paintbrush size={13} />}
+              defaultOpen={false}
+              count={elementStyleKeys.length}
+            >
+              {elementStyleKeys.map((sk) => (
+                <StyleEditor key={sk} label={camelToTitle(sk)} styleKey={sk} styles={option.styles ?? {}} onChange={updateOption} />
+              ))}
+            </CollapsibleSection>
           )}
 
           {/* Danger zone */}
@@ -227,8 +256,9 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
               whileTap={{ scale: 0.98 }}
               onClick={() => dispatch({ type: 'REMOVE_COMPONENT', payload: selectedId })}
               className="btn btn-danger"
-              style={{ width: '100%', fontSize: 12 }}
+              style={{ width: '100%', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
+              <Trash2 size={13} />
               Remove Component
             </motion.button>
           </div>
@@ -236,6 +266,10 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
       </div>
     </div>
   );
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: 'linear-gradient(to right, transparent, var(--color-border), transparent)', margin: '14px 0' }} />;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -258,6 +292,64 @@ function FormSection({ label, children }: { label: string; children: React.React
         color: 'var(--color-text-secondary)', marginBottom: 3,
       }}>{label}</label>
       {children}
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, icon, defaultOpen, count, children }: {
+  title: string; icon?: React.ReactNode; defaultOpen: boolean; count?: number; children: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div style={{
+      marginTop: 14,
+      border: '1px solid var(--color-border)',
+      borderRadius: 'var(--radius-sm)',
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 10px', fontSize: 11, fontWeight: 600,
+          color: 'var(--color-text-secondary)',
+          background: open ? 'var(--color-surface-alt)' : '#fff',
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-sans)',
+          transition: 'background 0.15s',
+        }}
+      >
+        {icon}
+        <span style={{ flex: 1, textAlign: 'left' }}>{title}</span>
+        {count !== undefined && (
+          <span style={{
+            fontSize: 9, fontWeight: 700, background: 'var(--color-primary-light)',
+            color: 'var(--color-primary)', padding: '1px 6px', borderRadius: 10,
+          }}>{count}</span>
+        )}
+        <motion.span
+          animate={{ rotate: open ? 0 : -90 }}
+          transition={{ duration: 0.15 }}
+          style={{ display: 'flex', alignItems: 'center' }}
+        >
+          <ChevronDown size={14} />
+        </motion.span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '10px' }}>
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -304,21 +396,32 @@ function OptionFieldInput({ field, value, onChange }: {
       const selected: string[] = Array.isArray(effectiveValue) ? effectiveValue : [];
       return (
         <FormSection label={field.label}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {field.options?.map((opt) => (
-              <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(opt.value)}
-                  onChange={(e) => {
-                    const next = e.target.checked ? [...selected, opt.value] : selected.filter((v) => v !== opt.value);
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {field.options?.map((opt) => {
+              const isSelected = selected.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    const next = isSelected ? selected.filter((v) => v !== opt.value) : [...selected, opt.value];
                     onChange(next);
                   }}
-                  style={{ accentColor: 'var(--color-primary)' }}
-                />
-                <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{opt.label}</span>
-              </label>
-            ))}
+                  style={{
+                    padding: '3px 10px', fontSize: 11, fontWeight: isSelected ? 600 : 400,
+                    borderRadius: 12,
+                    border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: isSelected ? 'var(--color-primary-light)' : '#fff',
+                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    lineHeight: '18px',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         </FormSection>
       );
@@ -374,11 +477,13 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
           {hasValues && <span style={{ width: 7, height: 7, borderRadius: '50%', background: current.color || 'var(--color-primary)' }} />}
           {label}
         </span>
-        <span style={{
-          fontSize: 9, color: 'var(--color-text-muted)',
-          transition: 'transform var(--transition-fast)',
-          transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
-        }}>{'\u25BC'}</span>
+        <motion.span
+          animate={{ rotate: open ? 0 : -90 }}
+          transition={{ duration: 0.15 }}
+          style={{ display: 'flex', alignItems: 'center' }}
+        >
+          <ChevronDown size={12} />
+        </motion.span>
       </button>
       <AnimatePresence>
         {open && (
@@ -428,32 +533,107 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
   );
 }
 
-function SpacingGroup({ label, prefix, values, onChange }: {
+function BoxModelEditor({ label, prefix, values, onChange, color }: {
   label: string; prefix: string;
   values: Record<string, number>;
   onChange: (path: string, value: any) => void;
+  color: string;
 }) {
-  const sides = ['Top', 'Right', 'Bottom', 'Left'] as const;
+  const sides = [
+    { key: 'top', label: 'T' },
+    { key: 'right', label: 'R' },
+    { key: 'bottom', label: 'B' },
+    { key: 'left', label: 'L' },
+  ];
+
+  const boxColor = `${color}18`;
+  const borderColor = `${color}40`;
+
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5 }}>{label} (px)</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 3 }}>
-        {sides.map((side) => {
-          const key = side.toLowerCase();
-          return (
-            <div key={side} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <input
-                type="number" min={0}
-                value={values[key] ?? 0}
-                onChange={(e) => onChange(`${prefix}.${key}`, Number(e.target.value))}
-                className="input"
-                style={{ textAlign: 'center', padding: 3, fontSize: 11 }}
-              />
-              <span style={{ fontSize: 8, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{side[0]}</span>
-            </div>
-          );
-        })}
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6 }}>{label}</div>
+      <div style={{
+        position: 'relative',
+        background: boxColor,
+        border: `1.5px dashed ${borderColor}`,
+        borderRadius: 6,
+        padding: '6px',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        gridTemplateRows: 'auto auto auto',
+        alignItems: 'center',
+        justifyItems: 'center',
+        gap: 2,
+      }}>
+        {/* Top */}
+        <div style={{ gridColumn: '2', gridRow: '1' }}>
+          <BoxInput
+            value={values.top ?? 0}
+            onChange={(v) => onChange(`${prefix}.top`, v)}
+            label="T"
+          />
+        </div>
+        {/* Left */}
+        <div style={{ gridColumn: '1', gridRow: '2' }}>
+          <BoxInput
+            value={values.left ?? 0}
+            onChange={(v) => onChange(`${prefix}.left`, v)}
+            label="L"
+          />
+        </div>
+        {/* Center label */}
+        <div style={{
+          gridColumn: '2', gridRow: '2',
+          width: 44, height: 28,
+          background: '#fff', borderRadius: 4,
+          border: '1px solid var(--color-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 8, fontWeight: 700, color: 'var(--color-text-muted)',
+          textTransform: 'uppercase', letterSpacing: '0.08em',
+        }}>
+          {label}
+        </div>
+        {/* Right */}
+        <div style={{ gridColumn: '3', gridRow: '2' }}>
+          <BoxInput
+            value={values.right ?? 0}
+            onChange={(v) => onChange(`${prefix}.right`, v)}
+            label="R"
+          />
+        </div>
+        {/* Bottom */}
+        <div style={{ gridColumn: '2', gridRow: '3' }}>
+          <BoxInput
+            value={values.bottom ?? 0}
+            onChange={(v) => onChange(`${prefix}.bottom`, v)}
+            label="B"
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function BoxInput({ value, onChange, label }: {
+  value: number; onChange: (v: number) => void; label: string;
+}) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2 }}>
+      <input
+        type="number"
+        min={0}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{
+          width: 36, textAlign: 'center', padding: '3px 2px',
+          fontSize: 11, fontWeight: 600,
+          border: '1px solid var(--color-border)',
+          borderRadius: 4, background: '#fff',
+          outline: 'none',
+          fontFamily: 'var(--font-sans)',
+        }}
+        title={label}
+      />
     </div>
   );
 }

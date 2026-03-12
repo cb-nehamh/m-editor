@@ -109,7 +109,7 @@ function TreeNode({ node, depth }: { node: EditorComponent; depth: number }) {
         ) : (
           <span style={{ width: 12 }} />
         )}
-        <span style={{ fontSize: 12 }}>{def?.icon ?? '\u2B1C'}</span>
+        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{def?.icon ?? '\u2B1C'}</span>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
         <button
           onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
