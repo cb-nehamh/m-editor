@@ -4,9 +4,11 @@ import {
   DragOverlay,
   type DragStartEvent,
   type DragEndEvent,
+  type Modifier,
   PointerSensor,
   useSensor,
   useSensors,
+  closestCenter,
 } from '@dnd-kit/core';
 import { useSearchParams } from 'react-router-dom';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
@@ -103,6 +105,12 @@ function EditorShell() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+
+  const scaleModifier: Modifier = useCallback(({ transform }) => ({
+    ...transform,
+    x: transform.x / canvasScale,
+    y: transform.y / canvasScale,
+  }), [canvasScale]);
 
   const handleDragStart = useCallback((e: DragStartEvent) => {
     const type = e.active.data.current?.type as string | undefined;
@@ -220,7 +228,7 @@ function EditorShell() {
   const draggedDef = draggedType ? registryMap.get(draggedType) : null;
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[scaleModifier]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
 
         {/* ===== INFINITE CANVAS ===== */}

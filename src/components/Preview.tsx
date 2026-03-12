@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -273,6 +273,67 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
   );
 }
 
+function CollapsibleJsonViewer() {
+  const { state } = useEditor();
+  const [open, setOpen] = useState(false);
+  const configPayload = useMemo(
+    () => JSON.stringify({ sections: state.sections, containerWidth: state.containerWidth }, null, 2),
+    [state.sections, state.containerWidth],
+  );
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <button
+        className="no-pan"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+          padding: '10px 16px', fontSize: 12, fontWeight: 600,
+          color: 'var(--color-text-muted)',
+          background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)',
+          border: '1px solid var(--color-border)', borderRadius: 8,
+          cursor: 'pointer', transition: 'all 0.15s',
+        }}
+      >
+        <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s', fontSize: 10 }}>&#x25B6;</span>
+        Config JSON
+        <span style={{
+          fontSize: 9, fontWeight: 700, background: 'var(--color-primary-light)',
+          color: 'var(--color-primary)', padding: '1px 6px', borderRadius: 10,
+          marginLeft: 'auto',
+        }}>{configPayload.length} chars</span>
+      </button>
+      {open && (
+        <div
+          className="no-pan"
+          style={{
+            marginTop: 4, border: '1px solid var(--color-border)', borderRadius: 8,
+            background: '#1e293b', overflow: 'hidden', maxHeight: 400,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 10px', borderBottom: '1px solid #334155' }}>
+            <button
+              className="no-pan"
+              onClick={() => { navigator.clipboard.writeText(configPayload); }}
+              style={{
+                fontSize: 10, fontWeight: 600, padding: '3px 10px',
+                background: '#334155', color: '#94a3b8', border: 'none',
+                borderRadius: 4, cursor: 'pointer',
+              }}
+            >Copy</button>
+          </div>
+          <pre style={{
+            margin: 0, padding: '12px 16px', fontSize: 11,
+            color: '#e2e8f0', fontFamily: 'monospace',
+            overflowX: 'auto', overflowY: 'auto', maxHeight: 350,
+            whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+          }}>{configPayload}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Preview() {
   const { state, dispatch } = useEditor();
   const totalComponents = state.sections.reduce(
@@ -316,6 +377,7 @@ export function Preview() {
         </AnimatePresence>
       </div>
 
+      <CollapsibleJsonViewer />
     </div>
   );
 }

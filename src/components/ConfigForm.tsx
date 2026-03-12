@@ -76,11 +76,17 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
   };
 
   const currentVariant = option.variant ?? def.variants?.[0]?.value;
-  const visibleOptions = def.options.filter((f) => isVisibleForVariant(f, currentVariant));
+  const shippingFieldOption = def.id === 'subscriptionDetails'
+    ? def.options.find((f) => f.key === 'shippingAddressFields')
+    : undefined;
+  const visibleOptions = def.options.filter((f) =>
+    isVisibleForVariant(f, currentVariant) && f.key !== 'shippingAddressFields'
+  );
   const visibleFeatures = def.features.filter((f) => isVisibleForVariant(f, currentVariant));
   const elementStyleKeys = def.styleKeys.filter((sk) => sk !== 'heading');
 
   const optionGroups = groupBy(visibleOptions, (f) => f.group ?? '');
+  const shippingEnabled = option.features?.showShippingAddress !== false;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -197,6 +203,22 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                 })}
               </div>
             </div>
+          )}
+
+          {/* Shipping Address Fields -- collapsible, only when shipping is enabled */}
+          {shippingFieldOption && shippingEnabled && (
+            <CollapsibleSection
+              title="Shipping Address Fields"
+              icon={<ChevronDown size={13} />}
+              defaultOpen={false}
+              count={(option.shippingAddressFields ?? shippingFieldOption.default ?? []).length}
+            >
+              <OptionFieldInput
+                field={shippingFieldOption}
+                value={option[shippingFieldOption.key]}
+                onChange={(val) => updateOption(shippingFieldOption.key, val)}
+              />
+            </CollapsibleSection>
           )}
 
           {/* Click Actions */}

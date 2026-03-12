@@ -100,7 +100,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showPayNow', label: 'Show Pay Now', default: true },
       { key: 'showDownload', label: 'Show Download', default: true },
       { key: 'showView', label: 'Show View', default: true },
-      { key: 'showExpandableRows', label: 'Expandable Rows', default: false, visibleWhen: { variant: 'detailed' } },
+      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
       { key: 'showAccountSummary', label: 'Show Account Summary', default: true },
       { key: 'showPagination', label: 'Show Pagination', default: true },
     ],
@@ -224,7 +224,6 @@ export const componentRegistry: ComponentDef[] = [
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Subscription Details' },
       { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '' },
-      { key: 'trialDaysRemaining', label: 'Trial Days Remaining', type: 'number', default: 0 },
       {
         key: 'shippingAddressFields', label: 'Shipping Fields', type: 'multiselect',
         default: ['first_name', 'last_name', 'phone', 'company', 'line1', 'line2', 'city', 'state_code', 'zip', 'country'],
@@ -266,7 +265,6 @@ export const componentRegistry: ComponentDef[] = [
     ],
     buttonActions: [
       { key: 'edit', label: 'Edit Subscription', standardActions: [
-        { value: 'edit_subscription_inline', label: 'Edit Inline', description: 'Switches to inline edit mode with plan/addon/quantity controls' },
         { value: 'checkout_existing', label: 'Open Edit Page', description: 'Opens Chargebee subscription edit hosted page' },
       ], dataFields: [
         { key: 'subscriptionId', label: 'Subscription ID' },
