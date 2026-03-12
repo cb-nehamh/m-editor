@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchConfig, createPortalSession } from '../api';
+import { buildTree } from '../state';
 
 const CUSTOMERS = [
   'tier-test1',
@@ -42,7 +43,15 @@ export function PreviewPage() {
     fetchConfig(domain, configId)
       .then((res) => {
         if (res) {
-          setConfig(res.config as any[]);
+          const raw = res.config as any;
+          const inner = Array.isArray(raw) ? raw[0] : raw;
+          if (inner?.sections) {
+            setConfig(buildTree(inner.sections));
+          } else if (Array.isArray(raw)) {
+            setConfig(raw);
+          } else {
+            setConfig([raw]);
+          }
         } else {
           setError('Config not found');
         }

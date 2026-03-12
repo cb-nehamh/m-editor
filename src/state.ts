@@ -362,4 +362,4 @@ export function useEditor(): EditorContextValue {
   return ctx;
 }
 
-export { findInRegions, findInAllSections, getActiveSection };
+export { findInRegions, findInAllSections, getActiveSection, buildTree };
