@@ -54,6 +54,7 @@ export interface ComponentDef {
   icon: React.ReactNode;
   category: 'business';
   isContainer: boolean;
+  comingSoon?: boolean;
   regions?: string[];
   variants?: VariantDef[];
   options: OptionField[];
@@ -531,6 +532,7 @@ export const componentRegistry: ComponentDef[] = [
     icon: React.createElement(BarChart3, { size: 16 }),
     category: 'business',
     isContainer: false,
+    comingSoon: true,
     variants: [
       { value: 'allInvoices', label: 'All Invoices' },
       { value: 'singleInvoice', label: 'Single Invoice' },

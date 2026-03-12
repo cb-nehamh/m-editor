@@ -57,18 +57,30 @@ function DraggablePaletteItem({ def }: { def: ComponentDef }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${def.id}`,
     data: { type: def.id },
+    disabled: !!def.comingSoon,
   });
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`palette-item${isDragging ? ' dragging' : ''}`}
+      {...(def.comingSoon ? {} : listeners)}
+      {...(def.comingSoon ? {} : attributes)}
+      className={`palette-item${isDragging ? ' dragging' : ''}${def.comingSoon ? ' coming-soon' : ''}`}
+      style={def.comingSoon ? { opacity: 0.6, cursor: 'default' } : undefined}
     >
       <span className="palette-icon">{def.icon}</span>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 12 }}>{def.label}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {def.label}
+          {def.comingSoon && (
+            <span style={{
+              fontSize: 8, fontWeight: 700, textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              color: '#fff', padding: '1px 5px', borderRadius: 3,
+              letterSpacing: '0.04em', lineHeight: '14px',
+            }}>Coming Soon</span>
+          )}
+        </div>
         <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 400, marginTop: 1 }}>{def.description}</div>
       </div>
     </div>

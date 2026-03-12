@@ -140,7 +140,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
       className={`widget-card no-pan${isSelected ? ' selected' : ''}`}
       style={containerStyle}
     >
-      <div className="drag-handle" title="Drag to reorder" {...attributes} {...listeners}>&#x2630;</div>
+      <div className="drag-handle no-pan" title="Drag to reorder" {...attributes} {...listeners}>&#x2630;</div>
 
       <button
         onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
