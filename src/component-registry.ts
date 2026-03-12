@@ -223,6 +223,25 @@ export const componentRegistry: ComponentDef[] = [
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Subscription Details' },
       { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '' },
+      { key: 'trialDaysRemaining', label: 'Trial Days Remaining', type: 'number', default: 0 },
+      {
+        key: 'shippingAddressFields', label: 'Shipping Fields', type: 'multiselect',
+        default: ['first_name', 'last_name', 'phone', 'company', 'line1', 'line2', 'city', 'state_code', 'zip', 'country'],
+        options: [
+          { value: 'first_name', label: 'First Name' },
+          { value: 'last_name', label: 'Last Name' },
+          { value: 'email', label: 'Email' },
+          { value: 'phone', label: 'Phone' },
+          { value: 'company', label: 'Company' },
+          { value: 'line1', label: 'Address Line 1' },
+          { value: 'line2', label: 'Address Line 2' },
+          { value: 'line3', label: 'Address Line 3' },
+          { value: 'city', label: 'City' },
+          { value: 'state_code', label: 'State / Province' },
+          { value: 'zip', label: 'Zip / Postal Code' },
+          { value: 'country', label: 'Country' },
+        ],
+      },
     ],
     features: [
       { key: 'showPauseResume', label: 'Show Pause/Resume', default: true },
@@ -236,6 +255,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showDiscounts', label: 'Show Discounts', default: true },
       { key: 'showScheduledChanges', label: 'Show Scheduled Changes', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
       { key: 'showEntitledFeatures', label: 'Show Entitled Features', default: true, visibleWhen: { variant: ['detailed'] } },
+      { key: 'showSkip', label: 'Show Skip Delivery', default: false },
     ],
     styleKeys: [
       'container', 'heading', 'headerCard', 'statusBadge', 'detailRow',
@@ -245,6 +265,7 @@ export const componentRegistry: ComponentDef[] = [
     ],
     buttonActions: [
       { key: 'edit', label: 'Edit Subscription', standardActions: [
+        { value: 'edit_subscription_inline', label: 'Edit Inline', description: 'Switches to inline edit mode with plan/addon/quantity controls' },
         { value: 'checkout_existing', label: 'Open Edit Page', description: 'Opens Chargebee subscription edit hosted page' },
       ], dataFields: [
         { key: 'subscriptionId', label: 'Subscription ID' },
@@ -276,6 +297,16 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'proceedToPayment', label: 'Proceed to Payment', standardActions: [
         { value: 'collect_now', label: 'Open Payment Page', description: 'Opens Chargebee Collect Now hosted page' },
       ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+      ]},
+      { key: 'renew', label: 'Renew / Reactivate', standardActions: [
+        { value: 'reactivate_subscription', label: 'Reactivate via API', description: 'Reactivates a cancelled subscription via Chargebee API' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+        { key: 'planName', label: 'Plan Name' },
+        { key: 'status', label: 'Status' },
+      ]},
+      { key: 'skip', label: 'Skip Next Delivery', standardActions: [], dataFields: [
         { key: 'subscriptionId', label: 'Subscription ID' },
       ]},
     ],
@@ -327,6 +358,7 @@ export const componentRegistry: ComponentDef[] = [
     variants: [],
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Payment Methods' },
+      { key: 'addButtonText', label: 'Add Button Text', type: 'string', default: '+ Add payment method' },
     ],
     features: [
       { key: 'showRemove', label: 'Show Remove', default: true },
@@ -411,6 +443,10 @@ export const componentRegistry: ComponentDef[] = [
       ], dataFields: [
         { key: 'paymentSourceId', label: 'Payment Source ID' },
       ]},
+      { key: 'addSuccess', label: 'Add Success Callback', standardActions: [], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
+      ]},
+      { key: 'addCancel', label: 'Add Cancel Callback', standardActions: [], dataFields: []},
     ],
   },
   {
@@ -432,6 +468,9 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showEdit', label: 'Show Edit', default: true },
       { key: 'showSave', label: 'Show Save', default: true },
       { key: 'showCancel', label: 'Show Cancel', default: true },
+      { key: 'showAddressFields', label: 'Show Address Fields', default: true },
+      { key: 'showTaxFields', label: 'Show Tax Fields', default: false },
+      { key: 'showEInvoicingFields', label: 'Show E-Invoicing Fields', default: false },
     ],
     styleKeys: [
       'container', 'heading', 'editButton', 'fieldGrid', 'fieldGroup',
@@ -466,6 +505,7 @@ export const componentRegistry: ComponentDef[] = [
         ],
       },
       { key: 'editable', label: 'Editable', type: 'boolean', default: true },
+      { key: 'fields', label: 'Custom Fields (JSON)', type: 'json', default: [] },
       {
         key: 'layout', label: 'Form Layout', type: 'select', default: 'grid',
         options: [
@@ -540,6 +580,7 @@ export const componentRegistry: ComponentDef[] = [
 
 const sharedOptions: OptionField[] = [
   { key: 'defaultVisible', label: 'Visible by Default', type: 'boolean', default: true },
+  { key: 'descriptionText', label: 'Description Text', type: 'string', default: '' },
 ];
 
 for (const def of componentRegistry) {

@@ -68,7 +68,7 @@ function EditorShell() {
           const config = res.config as any;
           const inner = Array.isArray(config) ? config[0] : config;
           if (inner?.sections) {
-            dispatch({ type: 'LOAD_FULL', payload: { sections: inner.sections } });
+            dispatch({ type: 'LOAD_FULL', payload: { sections: inner.sections, containerWidth: inner.containerWidth } });
           } else if (Array.isArray(config)) {
             dispatch({ type: 'LOAD_CONFIG', payload: config });
           }
@@ -195,7 +195,7 @@ function EditorShell() {
 
     setSaving(true);
     try {
-      const configPayload = { sections: state.sections };
+      const configPayload = { sections: state.sections, containerWidth: state.containerWidth };
       await saveConfig(domain, id, [configPayload] as any, status);
       setConfigStatus(status);
       if (!configId) {

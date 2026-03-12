@@ -39,6 +39,7 @@ export interface EditorState {
 
 export interface SavedEditorConfig {
   sections: LayoutSection[];
+  containerWidth?: number;
 }
 
 export type EditorAction =
@@ -328,7 +329,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       return { ...state, tree: action.payload, selectedId: null };
 
     case 'LOAD_FULL': {
-      const { sections: loadedSections } = action.payload;
+      const { sections: loadedSections, containerWidth: loadedWidth } = action.payload;
       const sections = loadedSections.length > 0 ? loadedSections : [createSection('fullWidth')];
       return {
         ...state,
@@ -336,6 +337,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         activeSectionId: sections[0].id,
         tree: buildTree(sections),
         selectedId: null,
+        ...(loadedWidth != null && { containerWidth: loadedWidth }),
       };
     }
 
