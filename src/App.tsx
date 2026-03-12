@@ -290,24 +290,14 @@ function EditorShell() {
           </span>
 
           {configId && (
-            <>
-              <div className="toolbar-divider" />
-              <span
-                style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace', cursor: 'pointer' }}
-                title={configId}
-                onClick={() => { navigator.clipboard.writeText(configId); showToast('Config ID copied!'); }}
-              >
-                {configId.length > 12 ? `${configId.slice(0, 12)}...` : configId}
-              </span>
-              <button
-                className="btn-toolbar"
-                onClick={() => { navigator.clipboard.writeText(configId); showToast('Config ID copied!'); }}
-                title="Copy config ID"
-                style={{ fontSize: 11, padding: '2px 5px', minWidth: 0 }}
-              >
-                &#x2398;
-              </button>
-            </>
+            <span
+              className="btn-toolbar"
+              style={{ fontSize: 10, fontFamily: 'monospace', cursor: 'pointer', padding: '2px 6px', minWidth: 0 }}
+              title={`Copy: ${configId}`}
+              onClick={() => { navigator.clipboard.writeText(configId); showToast('Config ID copied!'); }}
+            >
+              {configId.length > 8 ? `${configId.slice(0, 8)}…` : configId}
+            </span>
           )}
 
           <div className="toolbar-divider" />

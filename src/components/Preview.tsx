@@ -276,10 +276,27 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
 function CollapsibleJsonViewer() {
   const { state } = useEditor();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const jsonContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = jsonContainerRef.current;
+    if (!el) return;
+    const stopWheel = (e: WheelEvent) => { e.stopPropagation(); };
+    el.addEventListener('wheel', stopWheel, { passive: false });
+    return () => el.removeEventListener('wheel', stopWheel);
+  });
+
   const configPayload = useMemo(
     () => JSON.stringify({ sections: state.sections, containerWidth: state.containerWidth }, null, 2),
     [state.sections, state.containerWidth],
   );
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(configPayload);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <div style={{ marginTop: 24 }}>
@@ -305,28 +322,33 @@ function CollapsibleJsonViewer() {
       </button>
       {open && (
         <div
+          ref={jsonContainerRef}
           className="no-pan"
           style={{
             marginTop: 4, border: '1px solid var(--color-border)', borderRadius: 8,
-            background: '#1e293b', overflow: 'hidden', maxHeight: 400,
+            background: '#1e293b', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', maxHeight: 480,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 10px', borderBottom: '1px solid #334155' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '6px 10px', borderBottom: '1px solid #334155', flexShrink: 0 }}>
+            {copied && <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>Copied!</span>}
             <button
               className="no-pan"
-              onClick={() => { navigator.clipboard.writeText(configPayload); }}
+              onClick={handleCopy}
               style={{
                 fontSize: 10, fontWeight: 600, padding: '3px 10px',
-                background: '#334155', color: '#94a3b8', border: 'none',
-                borderRadius: 4, cursor: 'pointer',
+                background: copied ? '#166534' : '#334155',
+                color: copied ? '#bbf7d0' : '#94a3b8',
+                border: 'none', borderRadius: 4, cursor: 'pointer',
+                transition: 'all 0.15s',
               }}
-            >Copy</button>
+            >{copied ? 'Copied!' : 'Copy'}</button>
           </div>
           <pre style={{
-            margin: 0, padding: '12px 16px', fontSize: 11,
-            color: '#e2e8f0', fontFamily: 'monospace',
-            overflowX: 'auto', overflowY: 'auto', maxHeight: 350,
-            whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+            margin: 0, padding: '12px 16px', fontSize: 13,
+            lineHeight: 1.5, color: '#e2e8f0', fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            overflowX: 'auto', overflowY: 'auto', flex: 1,
+            whiteSpace: 'pre', tabSize: 2,
           }}>{configPayload}</pre>
         </div>
       )}
