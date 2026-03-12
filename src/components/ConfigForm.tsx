@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEditor, findInAllSections } from '../state';
-import { registryMap, type OptionField, type FeatureToggle } from '../component-registry';
-import { ChevronDown, Paintbrush, Trash2 } from 'lucide-react';
+import { useEditor, findInAllSections, collectAllComponents } from '../state';
+import { registryMap, type OptionField, type FeatureToggle, type ClickActionDef, type ButtonActionDef } from '../component-registry';
+import { ChevronDown, Paintbrush, Trash2, Zap, MousePointerClick } from 'lucide-react';
 
 function isVisibleForVariant(item: { visibleWhen?: { variant?: string | string[] } }, currentVariant: string | undefined): boolean {
   if (!item.visibleWhen?.variant) return true;
@@ -197,6 +197,26 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                 })}
               </div>
             </div>
+          )}
+
+          {/* Click Actions */}
+          {def.clickActions && def.clickActions.length > 0 && (
+            <ClickActionsSection
+              actions={def.clickActions}
+              option={option}
+              selectedId={selectedId}
+              onChange={updateOption}
+            />
+          )}
+
+          {/* Button Actions */}
+          {def.buttonActions && def.buttonActions.length > 0 && (
+            <ButtonActionsSection
+              actions={def.buttonActions}
+              option={option}
+              selectedId={selectedId}
+              onChange={updateOption}
+            />
           )}
 
           <Divider />
@@ -635,5 +655,227 @@ function BoxInput({ value, onChange, label }: {
         title={label}
       />
     </div>
+  );
+}
+
+function ClickActionsSection({ actions, option, selectedId, onChange }: {
+  actions: ClickActionDef[];
+  option: Record<string, any>;
+  selectedId: string;
+  onChange: (path: string, value: any) => void;
+}) {
+  const { state } = useEditor();
+  const allComponents = React.useMemo(() => collectAllComponents(state.sections), [state.sections]);
+  const targets = allComponents.filter((c) => c.name !== selectedId);
+
+  const clickActions: Record<string, any> = option.clickActions ?? {};
+
+  return (
+    <CollapsibleSection
+      title="Click Actions"
+      icon={<Zap size={13} />}
+      defaultOpen={false}
+      count={actions.length}
+    >
+      {actions.map((action) => {
+        const cfg = clickActions[action.key] ?? {};
+        return (
+          <div key={action.key} style={{
+            marginBottom: 10, padding: '8px 10px',
+            background: 'var(--color-surface-alt)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)',
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', marginBottom: 6 }}>
+              {action.label}
+            </div>
+
+            {/* Target selector */}
+            <div style={{ marginBottom: 6 }}>
+              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>
+                Target Component
+              </label>
+              <select
+                className="select"
+                style={{ fontSize: 11, width: '100%' }}
+                value={cfg.target ?? ''}
+                onChange={(e) => onChange(`clickActions.${action.key}.target`, e.target.value || null)}
+              >
+                <option value="">— None —</option>
+                {targets.map((t) => {
+                  const tDef = registryMap.get(t.type);
+                  return (
+                    <option key={t.name} value={t.name}>
+                      {tDef?.label ?? t.type} ({t.name.split('-').slice(0, -1).join('-') || t.name})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Send visibility toggle */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 6, padding: '3px 0',
+            }}>
+              <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Send Visibility</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={cfg.sendVisibility ?? false}
+                  onChange={(e) => onChange(`clickActions.${action.key}.sendVisibility`, e.target.checked)}
+                />
+                <span className="toggle-slider" />
+              </label>
+            </div>
+
+            {/* Data field chips */}
+            {action.dataFields.length > 0 && (
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                  Data to Send
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {action.dataFields.map((df) => {
+                    const selected = (cfg.dataFields ?? []).includes(df.key);
+                    return (
+                      <button
+                        key={df.key}
+                        onClick={() => {
+                          const current: string[] = cfg.dataFields ?? [];
+                          const next = selected
+                            ? current.filter((k: string) => k !== df.key)
+                            : [...current, df.key];
+                          onChange(`clickActions.${action.key}.dataFields`, next);
+                        }}
+                        style={{
+                          padding: '3px 8px', fontSize: 10, fontWeight: 600,
+                          borderRadius: 10, cursor: 'pointer',
+                          border: selected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                          background: selected ? 'var(--color-primary-light)' : '#fff',
+                          color: selected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {df.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </CollapsibleSection>
+  );
+}
+
+function ButtonActionsSection({ actions, option, selectedId, onChange }: {
+  actions: ButtonActionDef[];
+  option: Record<string, any>;
+  selectedId: string;
+  onChange: (path: string, value: any) => void;
+}) {
+  const { state } = useEditor();
+  const allComponents = React.useMemo(() => collectAllComponents(state.sections), [state.sections]);
+  const targets = allComponents.filter((c) => c.name !== selectedId);
+
+  const buttonActions: Record<string, any> = option.buttonActions ?? {};
+
+  return (
+    <CollapsibleSection
+      title="Button Actions"
+      icon={<MousePointerClick size={13} />}
+      defaultOpen={false}
+      count={actions.length}
+    >
+      {actions.map((action) => {
+        const cfg = buttonActions[action.key] ?? {};
+        const hasStandard = !!cfg.standard;
+        const hasMessage = !!cfg.message?.target;
+
+        return (
+          <div key={action.key} style={{
+            marginBottom: 10, padding: '8px 10px',
+            background: 'var(--color-surface-alt)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)',
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', marginBottom: 6 }}>
+              {action.label}
+            </div>
+
+            {/* Standard action */}
+            {action.standardActions.length > 0 && (
+              <div style={{ marginBottom: 6 }}>
+                <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>
+                  Standard Action
+                </label>
+                <select
+                  className="select"
+                  style={{ fontSize: 11, width: '100%' }}
+                  value={cfg.standard ?? ''}
+                  onChange={(e) => onChange(`buttonActions.${action.key}.standard`, e.target.value || null)}
+                >
+                  <option value="">— None —</option>
+                  {action.standardActions.map((sa) => (
+                    <option key={sa.value} value={sa.value}>{sa.label}</option>
+                  ))}
+                </select>
+                {hasStandard && (
+                  <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2, fontStyle: 'italic' }}>
+                    {action.standardActions.find((sa) => sa.value === cfg.standard)?.description}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Message event */}
+            <div style={{
+              marginTop: 6, paddingTop: 6,
+              borderTop: '1px solid var(--color-border)',
+            }}>
+              <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>
+                Message Event
+              </label>
+              <select
+                className="select"
+                style={{ fontSize: 11, width: '100%', marginBottom: 4 }}
+                value={cfg.message?.target ?? ''}
+                onChange={(e) => onChange(`buttonActions.${action.key}.message.target`, e.target.value || null)}
+              >
+                <option value="">— None —</option>
+                {targets.map((t) => {
+                  const tDef = registryMap.get(t.type);
+                  return (
+                    <option key={t.name} value={t.name}>
+                      {tDef?.label ?? t.type} ({t.name.split('-').slice(0, -1).join('-') || t.name})
+                    </option>
+                  );
+                })}
+              </select>
+
+              {hasMessage && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '3px 0',
+                }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Send Visibility</span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={cfg.message?.sendVisibility ?? false}
+                      onChange={(e) => onChange(`buttonActions.${action.key}.message.sendVisibility`, e.target.checked)}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </CollapsibleSection>
   );
 }

@@ -362,4 +362,20 @@ export function useEditor(): EditorContextValue {
   return ctx;
 }
 
-export { findInRegions, findInAllSections, getActiveSection, buildTree };
+function collectAllComponents(sections: LayoutSection[]): EditorComponent[] {
+  const result: EditorComponent[] = [];
+  function walk(nodes: EditorComponent[]) {
+    for (const n of nodes) {
+      result.push(n);
+      if (n.child) walk(n.child);
+    }
+  }
+  for (const section of sections) {
+    for (const region of Object.values(section.regionComponents)) {
+      walk(region);
+    }
+  }
+  return result;
+}
+
+export { findInRegions, findInAllSections, getActiveSection, buildTree, collectAllComponents };
