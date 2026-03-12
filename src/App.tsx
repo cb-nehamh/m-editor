@@ -66,8 +66,9 @@ function EditorShell() {
         if (res) {
           setConfigStatus((res.status as 'draft' | 'published') || 'draft');
           const config = res.config as any;
-          if (config?.sections) {
-            dispatch({ type: 'LOAD_FULL', payload: { sections: config.sections } });
+          const inner = Array.isArray(config) ? config[0] : config;
+          if (inner?.sections) {
+            dispatch({ type: 'LOAD_FULL', payload: { sections: inner.sections } });
           } else if (Array.isArray(config)) {
             dispatch({ type: 'LOAD_CONFIG', payload: config });
           }
@@ -147,8 +148,7 @@ function EditorShell() {
   );
 
   async function handleSave(status: 'draft' | 'published') {
-    const id = configId || prompt('Enter a config ID:');
-    if (!id) return;
+    const id = configId || crypto.randomUUID();
 
     setSaving(true);
     try {
