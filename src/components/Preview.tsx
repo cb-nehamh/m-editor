@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, LAYOUT_DEFS, type EditorComponent, type LayoutSection } from '../state';
 import { registryMap } from '../component-registry';
@@ -57,11 +59,23 @@ function resolveEditorStyles(editorStyles: Record<string, any> | undefined): Rec
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
 
-function LiveWidget({ node }: { node: EditorComponent }) {
+function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectionId: string; region: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef<string | null>(null);
   const { dispatch, state } = useEditor();
   const isSelected = state.selectedId === node.name;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition: sortTransition,
+    isDragging,
+  } = useSortable({
+    id: node.name,
+    data: { sectionId, region, componentName: node.name },
+  });
 
   const mountOptionKey = useMemo(() => {
     const { spacing, ...rest } = (node.option ?? {}) as any;
@@ -114,21 +128,19 @@ function LiveWidget({ node }: { node: EditorComponent }) {
     marginBottom: margin.bottom ? `${margin.bottom}px` : '8px',
     marginLeft: margin.left ? `${margin.left}px` : undefined,
     width: '100%',
-    transition: 'margin 0.2s ease',
+    transition: sortTransition ?? 'margin 0.2s ease',
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <motion.div
-      layout="position"
-      initial={{ opacity: 0, scale: 0.96, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96, y: -8 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+    <div
+      ref={setNodeRef}
       onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SELECT', payload: node.name }); }}
       className={`widget-card no-pan${isSelected ? ' selected' : ''}`}
       style={containerStyle}
     >
-      <div className="drag-handle" title="Drag to reorder">&#x2630;</div>
+      <div className="drag-handle" title="Drag to reorder" {...attributes} {...listeners}>&#x2630;</div>
 
       <button
         onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
@@ -146,8 +158,7 @@ function LiveWidget({ node }: { node: EditorComponent }) {
         title="Remove"
       >{'\u00D7'}</button>
 
-      {(() => {
-        const titleText = node.option?.titleText ?? def?.label ?? node.type;
+      {node.option?.titleText ? (() => {
         const headingStyle = node.option?.styles?.heading ?? {};
         const resolvedHeadingStyle: React.CSSProperties = {
           fontSize: headingStyle.fontSize ? `${headingStyle.fontSize}px` : '15px',
@@ -156,8 +167,8 @@ function LiveWidget({ node }: { node: EditorComponent }) {
           margin: 0,
           padding: '12px 16px 4px 36px',
         };
-        return <h3 style={resolvedHeadingStyle}>{titleText}</h3>;
-      })()}
+        return <h3 style={resolvedHeadingStyle}>{node.option.titleText}</h3>;
+      })() : null}
 
       <div ref={hostRef} style={{ minHeight: 60, padding: '0 8px 8px' }} />
 
@@ -170,7 +181,7 @@ function LiveWidget({ node }: { node: EditorComponent }) {
           Hidden by default &mdash; will show when it receives a visibility message
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -240,16 +251,19 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
         }}>
           {layoutDef.regions.map((region) => {
             const comps = section.regionComponents[region] ?? [];
+            const sortableIds = comps.map((c) => c.name);
             return (
               <RegionDropZone key={region} region={region} sectionId={section.id}
                 regionLabel={regionLabels[region] ?? region.toUpperCase()}>
-                {comps.length > 0 ? (
-                  <div style={{ padding: 8 }}>
-                    <AnimatePresence>
-                      {comps.map((node) => <LiveWidget key={node.name} node={node} />)}
-                    </AnimatePresence>
-                  </div>
-                ) : undefined}
+                <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+                  {comps.length > 0 ? (
+                    <div style={{ padding: 8 }}>
+                      {comps.map((node) => (
+                        <LiveWidget key={node.name} node={node} sectionId={section.id} region={region} />
+                      ))}
+                    </div>
+                  ) : undefined}
+                </SortableContext>
               </RegionDropZone>
             );
           })}

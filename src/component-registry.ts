@@ -44,6 +44,7 @@ export interface ButtonActionDef {
   key: string;
   label: string;
   standardActions: StandardActionOption[];
+  dataFields?: { key: string; label: string }[];
 }
 
 export interface ComponentDef {
@@ -116,22 +117,27 @@ export const componentRegistry: ComponentDef[] = [
         { key: 'amountDue', label: 'Amount Due' },
         { key: 'currencyCode', label: 'Currency' },
       ]},
-      { key: 'viewClick', label: 'View Invoice Click', dataFields: [
-        { key: 'invoiceId', label: 'Invoice ID' },
-      ]},
-      { key: 'payNowClick', label: 'Pay Now Click', dataFields: [
-        { key: 'customerId', label: 'Customer ID' },
-        { key: 'totalDueAmount', label: 'Total Due' },
-      ]},
     ],
     buttonActions: [
       { key: 'payNow', label: 'Pay Now', standardActions: [
         { value: 'collect_now', label: 'Open Payment Page', description: 'Opens Chargebee Collect Now hosted page' },
+      ], dataFields: [
+        { key: 'invoiceId', label: 'Invoice ID' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'status', label: 'Status' },
+        { key: 'currencyCode', label: 'Currency' },
       ]},
       { key: 'download', label: 'Download Invoice', standardActions: [
         { value: 'download_pdf', label: 'Download PDF', description: 'Downloads invoice as PDF' },
+      ], dataFields: [
+        { key: 'invoiceId', label: 'Invoice ID' },
       ]},
-      { key: 'viewInvoice', label: 'View Invoice', standardActions: [] },
+      { key: 'viewInvoice', label: 'View Invoice', standardActions: [], dataFields: [
+        { key: 'invoiceId', label: 'Invoice ID' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'status', label: 'Status' },
+        { key: 'currencyCode', label: 'Currency' },
+      ]},
     ],
   },
   {
@@ -170,10 +176,22 @@ export const componentRegistry: ComponentDef[] = [
       },
       { key: 'enableFiltering', label: 'Enable Filtering', type: 'boolean', default: true },
       { key: 'pageSize', label: 'Page Size', type: 'number', default: 10 },
+      { key: 'hideCancelled', label: 'Hide Cancelled', type: 'boolean', default: false },
+      { key: 'hidePaused', label: 'Hide Paused', type: 'boolean', default: false },
+      {
+        key: 'defaultSortBehavior', label: 'Default Sort', type: 'select', default: 'none',
+        options: [
+          { value: 'none', label: 'None' },
+          { value: 'active_first', label: 'Active First' },
+          { value: 'trial_first', label: 'Trial First' },
+          { value: 'skip_cancelled', label: 'Skip Cancelled' },
+        ],
+      },
     ],
     features: [
       { key: 'showViewAction', label: 'Show View Action', default: true },
       { key: 'showPagination', label: 'Show Pagination', default: true },
+      { key: 'showExpandableRows', label: 'Expandable Rows', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
     ],
     styleKeys: [
       'container', 'table', 'tableHeader', 'tableRow', 'tableRowHover',
@@ -197,7 +215,11 @@ export const componentRegistry: ComponentDef[] = [
     icon: React.createElement(FileText, { size: 16 }),
     category: 'business',
     isContainer: false,
-    variants: [],
+    variants: [
+      { value: 'compact', label: 'Compact' },
+      { value: 'standard', label: 'Standard' },
+      { value: 'detailed', label: 'Detailed' },
+    ],
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Subscription Details' },
       { key: 'subscriptionId', label: 'Subscription ID', type: 'string', default: '' },
@@ -211,6 +233,9 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showSwitchPlan', label: 'Show Switch Plan', default: false },
       { key: 'showProceedToPayment', label: 'Show Proceed to Payment', default: false },
       { key: 'showTrialBanner', label: 'Show Trial Banner', default: false },
+      { key: 'showDiscounts', label: 'Show Discounts', default: true },
+      { key: 'showScheduledChanges', label: 'Show Scheduled Changes', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
+      { key: 'showEntitledFeatures', label: 'Show Entitled Features', default: true, visibleWhen: { variant: ['detailed'] } },
     ],
     styleKeys: [
       'container', 'heading', 'headerCard', 'statusBadge', 'detailRow',
@@ -218,30 +243,40 @@ export const componentRegistry: ComponentDef[] = [
       'actionButton', 'dangerButton', 'editButton', 'buttonRow', 'shippingSection',
       'trialBanner', 'switchPlanButton', 'proceedToPaymentButton',
     ],
-    clickActions: [
-      { key: 'editClick', label: 'Edit Click', dataFields: [{ key: 'subscriptionId', label: 'Subscription ID' }] },
-      { key: 'cancelClick', label: 'Cancel Click', dataFields: [{ key: 'subscriptionId', label: 'Subscription ID' }] },
-      { key: 'pauseClick', label: 'Pause Click', dataFields: [{ key: 'subscriptionId', label: 'Subscription ID' }] },
-      { key: 'resumeClick', label: 'Resume Click', dataFields: [{ key: 'subscriptionId', label: 'Subscription ID' }] },
-    ],
     buttonActions: [
       { key: 'edit', label: 'Edit Subscription', standardActions: [
         { value: 'checkout_existing', label: 'Open Edit Page', description: 'Opens Chargebee subscription edit hosted page' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+        { key: 'planName', label: 'Plan Name' },
+        { key: 'status', label: 'Status' },
       ]},
       { key: 'cancel', label: 'Cancel Subscription', standardActions: [
         { value: 'cancel_subscription', label: 'Cancel via API', description: 'Cancels subscription via Chargebee API' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+        { key: 'status', label: 'Status' },
       ]},
       { key: 'pause', label: 'Pause Subscription', standardActions: [
         { value: 'pause_subscription', label: 'Pause via API', description: 'Pauses subscription via Chargebee API' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
       ]},
       { key: 'resume', label: 'Resume Subscription', standardActions: [
         { value: 'resume_subscription', label: 'Resume via API', description: 'Resumes subscription via Chargebee API' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
       ]},
       { key: 'switchPlan', label: 'Switch Plan', standardActions: [
         { value: 'checkout_existing', label: 'Open Plan Change Page', description: 'Opens Chargebee plan change hosted page' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+        { key: 'planName', label: 'Plan Name' },
       ]},
       { key: 'proceedToPayment', label: 'Proceed to Payment', standardActions: [
         { value: 'collect_now', label: 'Open Payment Page', description: 'Opens Chargebee Collect Now hosted page' },
+      ], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
       ]},
     ],
   },
@@ -267,15 +302,18 @@ export const componentRegistry: ComponentDef[] = [
       'lineItemsTable', 'lineItemHeader', 'lineItemRow', 'lineItemCell',
       'totalsSection', 'actionButton', 'payNowButton', 'buttonRow',
     ],
-    clickActions: [
-      { key: 'payNowClick', label: 'Pay Now Click', dataFields: [{ key: 'invoiceId', label: 'Invoice ID' }] },
-    ],
     buttonActions: [
       { key: 'payNow', label: 'Pay Now', standardActions: [
         { value: 'collect_now', label: 'Open Payment Page', description: 'Opens Chargebee Collect Now hosted page' },
+      ], dataFields: [
+        { key: 'invoiceId', label: 'Invoice ID' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'status', label: 'Status' },
       ]},
       { key: 'download', label: 'Download PDF', standardActions: [
         { value: 'download_pdf', label: 'Download PDF', description: 'Downloads invoice as PDF' },
+      ], dataFields: [
+        { key: 'invoiceId', label: 'Invoice ID' },
       ]},
     ],
   },
@@ -312,9 +350,13 @@ export const componentRegistry: ComponentDef[] = [
     buttonActions: [
       { key: 'addPaymentMethod', label: 'Add Payment Method', standardActions: [
         { value: 'manage_payment_sources', label: 'Open Payment Management', description: 'Opens Chargebee manage payment sources hosted page' },
-      ]},
+      ], dataFields: []},
       { key: 'removePaymentMethod', label: 'Remove Payment Method', standardActions: [
         { value: 'delete_payment_source', label: 'Delete via API', description: 'Deletes payment source via Chargebee API' },
+      ], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
+        { key: 'brand', label: 'Brand' },
+        { key: 'last4', label: 'Last 4 Digits' },
       ]},
     ],
   },
@@ -339,6 +381,9 @@ export const componentRegistry: ComponentDef[] = [
     ],
     features: [
       { key: 'showRemove', label: 'Show Remove', default: true },
+      { key: 'showSetPrimary', label: 'Show Set Primary', default: true },
+      { key: 'showSetBackup', label: 'Show Set Backup', default: true },
+      { key: 'showEdit', label: 'Show Edit', default: true },
     ],
     styleKeys: [
       'container', 'heading', 'detailCard', 'detailRow', 'detailLabel',
@@ -348,6 +393,23 @@ export const componentRegistry: ComponentDef[] = [
     buttonActions: [
       { key: 'removePaymentMethod', label: 'Remove Payment Method', standardActions: [
         { value: 'delete_payment_source', label: 'Delete via API', description: 'Deletes payment source via Chargebee API' },
+      ], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
+      ]},
+      { key: 'setPrimary', label: 'Set as Primary', standardActions: [
+        { value: 'set_primary_payment_source', label: 'Set Primary via API', description: 'Sets this payment source as primary' },
+      ], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
+      ]},
+      { key: 'setBackup', label: 'Set as Backup', standardActions: [
+        { value: 'set_backup_payment_source', label: 'Set Backup via API', description: 'Sets this payment source as backup' },
+      ], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
+      ]},
+      { key: 'editPaymentMethod', label: 'Edit Payment Method', standardActions: [
+        { value: 'manage_payment_sources', label: 'Open Management Page', description: 'Opens Chargebee manage payment sources hosted page' },
+      ], dataFields: [
+        { key: 'paymentSourceId', label: 'Payment Source ID' },
       ]},
     ],
   },
@@ -379,7 +441,7 @@ export const componentRegistry: ComponentDef[] = [
     buttonActions: [
       { key: 'save', label: 'Save Address', standardActions: [
         { value: 'update_billing_address', label: 'Update via API', description: 'Updates billing address via Chargebee API' },
-      ]},
+      ], dataFields: []},
     ],
   },
   {
@@ -419,7 +481,7 @@ export const componentRegistry: ComponentDef[] = [
     buttonActions: [
       { key: 'save', label: 'Save Account', standardActions: [
         { value: 'update_customer', label: 'Update via API', description: 'Updates customer details via Chargebee API' },
-      ]},
+      ], dataFields: []},
     ],
   },
   {

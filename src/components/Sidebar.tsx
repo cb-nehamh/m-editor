@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { componentRegistry, type ComponentDef } from '../component-registry';
-import { useEditor, LAYOUT_DEFS, type LayoutType, type EditorComponent, getActiveSection } from '../state';
+import { componentRegistry, registryMap, type ComponentDef } from '../component-registry';
+import { useEditor, LAYOUT_DEFS, type LayoutType, type EditorComponent, getActiveSection, collectAllComponents } from '../state';
 
 function LayoutThumbnail({ type, label, isActive, onClick }: {
   type: LayoutType;
@@ -71,70 +71,6 @@ function DraggablePaletteItem({ def }: { def: ComponentDef }) {
         <div style={{ fontWeight: 600, fontSize: 12 }}>{def.label}</div>
         <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 400, marginTop: 1 }}>{def.description}</div>
       </div>
-    </div>
-  );
-}
-
-function TreeNode({ node, depth }: { node: EditorComponent; depth: number }) {
-  const { state, dispatch } = useEditor();
-  const isSelected = state.selectedId === node.name;
-  const [expanded, setExpanded] = useState(true);
-  const hasChildren = node.child && node.child.length > 0;
-  const def = componentRegistry.find((c) => c.id === node.type);
-
-  return (
-    <div>
-      <motion.div
-        whileHover={{ backgroundColor: isSelected ? undefined : 'rgba(241, 245, 249, 0.8)' }}
-        onClick={() => dispatch({ type: 'SELECT', payload: node.name })}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '5px 8px', paddingLeft: `${8 + depth * 14}px`,
-          borderRadius: 4,
-          background: isSelected ? 'var(--color-primary-light)' : 'transparent',
-          borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
-          cursor: 'pointer', fontSize: 11,
-          fontWeight: isSelected ? 600 : 400,
-          color: isSelected ? '#1e40af' : 'var(--color-text-secondary)',
-          transition: 'all 0.1s',
-        }}
-      >
-        {hasChildren ? (
-          <span
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            style={{ cursor: 'pointer', fontSize: 8, width: 12, textAlign: 'center', color: 'var(--color-text-muted)' }}
-          >
-            {expanded ? '\u25BC' : '\u25B6'}
-          </span>
-        ) : (
-          <span style={{ width: 12 }} />
-        )}
-        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{def?.icon ?? '\u2B1C'}</span>
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
-        <button
-          onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
-          style={{
-            border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)',
-            fontSize: 13, padding: '0 2px', lineHeight: 1, opacity: 0.4,
-          }}
-          title="Remove"
-        >{'\u00D7'}</button>
-      </motion.div>
-      <AnimatePresence>
-        {hasChildren && expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
-          >
-            {node.child!.map((child) => (
-              <TreeNode key={child.name} node={child} depth={depth + 1} />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -289,19 +225,51 @@ export function Sidebar() {
           </div>
         </SectionBlock>
 
-        {/* Config Tree */}
-        <SectionBlock title="Config Tree" defaultOpen={true} badge={state.tree.length > 0 ? `${state.tree.length}` : undefined}>
-          {state.tree.length === 0 ? (
-            <div style={{
-              padding: '16px 0', textAlign: 'center', fontSize: 11,
-              color: 'var(--color-text-muted)',
-            }}>
-              Drag components to start building
-            </div>
-          ) : (
-            state.tree.map((node) => <TreeNode key={node.name} node={node} depth={0} />)
-          )}
-        </SectionBlock>
+        {/* Placed Components */}
+        {(() => {
+          const allComps = collectAllComponents(state.sections);
+          return (
+            <SectionBlock title="Placed Components" defaultOpen={false} badge={allComps.length > 0 ? `${allComps.length}` : undefined}>
+              {allComps.length === 0 ? (
+                <div style={{ padding: '16px 0', textAlign: 'center', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                  Drag components to start building
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {allComps.map((node) => {
+                    const def = registryMap.get(node.type);
+                    const isSelected = state.selectedId === node.name;
+                    return (
+                      <div
+                        key={node.name}
+                        onClick={() => dispatch({ type: 'SELECT', payload: node.name })}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '5px 8px', borderRadius: 4, cursor: 'pointer',
+                          background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                          borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
+                          fontSize: 11, fontWeight: isSelected ? 600 : 400,
+                          color: isSelected ? '#1e40af' : 'var(--color-text-secondary)',
+                          transition: 'all 0.1s',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{def?.icon ?? '\u2B1C'}</span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {def?.label ?? node.type}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); dispatch({ type: 'REMOVE_COMPONENT', payload: node.name }); }}
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: 13, padding: '0 2px', lineHeight: 1, opacity: 0.4 }}
+                          title="Remove"
+                        >{'\u00D7'}</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </SectionBlock>
+          );
+        })()}
       </div>
     </div>
   );

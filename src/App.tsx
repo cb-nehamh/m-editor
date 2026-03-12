@@ -112,14 +112,57 @@ function EditorShell() {
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
       setDraggedType(null);
-      const type = e.active.data.current?.type as string | undefined;
-      if (!type || !e.over) return;
+      if (!e.over) return;
 
+      const activeData = e.active.data.current ?? {};
+      const overData = e.over.data.current ?? {};
+
+      const isReorder = !!activeData.componentName;
+      if (isReorder) {
+        const activeName = activeData.componentName as string;
+        const fromSection = activeData.sectionId as string;
+        const fromRegion = activeData.region as string;
+
+        const toSection = (overData.sectionId as string) ?? fromSection;
+        const toRegion = (overData.region as string) ?? fromRegion;
+
+        if (fromSection === toSection && fromRegion === toRegion) {
+          const section = state.sections.find((s) => s.id === fromSection);
+          if (!section) return;
+          const comps = section.regionComponents[fromRegion] ?? [];
+          const fromIndex = comps.findIndex((c) => c.name === activeName);
+          const overName = (e.over!.data.current as any)?.componentName ?? e.over!.id;
+          const toIndex = comps.findIndex((c) => c.name === overName);
+          if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+          dispatch({
+            type: 'REORDER_WITHIN_REGION',
+            payload: { sectionId: fromSection, region: fromRegion, fromIndex, toIndex },
+          });
+        } else {
+          const targetSection = state.sections.find((s) => s.id === toSection);
+          if (!targetSection) return;
+          const targetComps = targetSection.regionComponents[toRegion] ?? [];
+          const overName = (e.over!.data.current as any)?.componentName;
+          const toIndex = overName
+            ? targetComps.findIndex((c) => c.name === overName)
+            : targetComps.length;
+
+          dispatch({
+            type: 'MOVE_BETWEEN_REGIONS',
+            payload: { componentId: activeName, toSectionId: toSection, toRegion, toIndex: Math.max(0, toIndex) },
+          });
+        }
+        return;
+      }
+
+      const type = activeData.type as string | undefined;
+      if (!type) return;
       const def = registryMap.get(type);
       if (!def) return;
 
-      const region = (e.over.data.current?.region as string) ?? 'main';
-      const sectionId = e.over.data.current?.sectionId as string | undefined;
+      const region = (overData.region as string) ?? 'main';
+      const sectionId = overData.sectionId as string | undefined;
 
       const id = `${type}-${Date.now()}`;
       const defaultVariant = def.variants?.[0]?.value;
@@ -144,7 +187,7 @@ function EditorShell() {
       if (sectionId) dispatch({ type: 'SELECT_SECTION', payload: sectionId });
       dispatch({ type: 'SELECT', payload: id });
     },
-    [dispatch]
+    [dispatch, state.sections]
   );
 
   async function handleSave(status: 'draft' | 'published') {

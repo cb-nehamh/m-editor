@@ -241,7 +241,8 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
             <FormSection label="Title Text">
               <input
                 type="text"
-                value={option.titleText ?? def.label}
+                value={option.titleText ?? ''}
+                placeholder={def.label}
                 onChange={(e) => updateOption('titleText', e.target.value)}
                 className="input"
                 style={{ fontSize: 12 }}
@@ -857,6 +858,7 @@ function ButtonActionsSection({ actions, option, selectedId, onChange }: {
               </select>
 
               {hasMessage && (
+                <>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '3px 0',
@@ -871,6 +873,42 @@ function ButtonActionsSection({ actions, option, selectedId, onChange }: {
                     <span className="toggle-slider" />
                   </label>
                 </div>
+
+                {action.dataFields && action.dataFields.length > 0 && (
+                  <div style={{ marginTop: 6 }}>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                      Data to Send
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {action.dataFields.map((df) => {
+                        const selected = (cfg.message?.dataFields ?? []).includes(df.key);
+                        return (
+                          <button
+                            key={df.key}
+                            onClick={() => {
+                              const current: string[] = cfg.message?.dataFields ?? [];
+                              const next = selected
+                                ? current.filter((k: string) => k !== df.key)
+                                : [...current, df.key];
+                              onChange(`buttonActions.${action.key}.message.dataFields`, next);
+                            }}
+                            style={{
+                              padding: '3px 8px', fontSize: 10, fontWeight: 600,
+                              borderRadius: 10, cursor: 'pointer',
+                              border: selected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                              background: selected ? 'var(--color-primary-light)' : '#fff',
+                              color: selected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {df.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                </>
               )}
             </div>
           </div>
