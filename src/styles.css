@@ -211,6 +211,10 @@ body {
 .floating-panel-body {
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+}
+.floating-panel-body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Top floating toolbar */
