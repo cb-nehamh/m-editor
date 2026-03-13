@@ -101,6 +101,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
       option: {
         ...node.option,
         ...(widgetStyles ? { styles: widgetStyles } : {}),
+        _configuredMode: node.option?.mode,
         mode: 'editor',
       },
     };
