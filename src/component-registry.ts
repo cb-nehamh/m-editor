@@ -452,7 +452,7 @@ export const componentRegistry: ComponentDef[] = [
           { value: 'add', label: 'Add' },
         ],
       },
-      { key: 'title', label: 'Title', type: 'string', default: 'Payment Method Details' },
+      { key: 'title', label: 'Title', type: 'string', default: '' },
       { key: 'paymentSourceId', label: 'Payment Source ID', type: 'string', default: '' },
       { key: 'cb_locale', label: 'Locale', type: 'select', default: 'en', group: 'Payment Component', options: [
         { value: 'en', label: 'English' }, { value: 'es', label: 'Spanish' }, { value: 'fr', label: 'French' },
