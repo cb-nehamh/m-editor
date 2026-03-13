@@ -13,5 +13,5 @@ ReactDOM.createRoot(document.getElementById('editor-root')!).render(
         <Route path="/preview" element={<PreviewPage />} />
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode> 
 );
