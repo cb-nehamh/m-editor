@@ -80,3 +80,50 @@ export async function createPortalSession(
   }
   return res.json();
 }
+
+export interface ChatMessage {
+  role: 'user' | 'agent';
+  text: string;
+  image?: string;
+  timestamp: number;
+}
+
+export async function saveChatMessage(
+  domain: string,
+  configId: string,
+  seq: number,
+  message: ChatMessage
+): Promise<void> {
+  const token = `${configId}-chat-history-${seq}`;
+  const res = await fetch(
+    `${BE_BASE}/${encodeURIComponent(domain)}/chat/${encodeURIComponent(token)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    }
+  );
+  if (!res.ok) throw new Error(`Save chat failed: ${res.status}`);
+}
+
+export async function loadAllChatHistory(
+  domain: string,
+  configId: string
+): Promise<ChatMessage[]> {
+  const messages: ChatMessage[] = [];
+  let seq = 1;
+
+  while (true) {
+    const token = `${configId}-chat-history-${seq}`;
+    const res = await fetch(
+      `${BE_BASE}/${encodeURIComponent(domain)}/chat/${encodeURIComponent(token)}`
+    );
+    if (res.status === 404) break;
+    if (!res.ok) break;
+    const msg = await res.json();
+    messages.push(msg as ChatMessage);
+    seq++;
+  }
+
+  return messages;
+}

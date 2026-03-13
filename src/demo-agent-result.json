@@ -1,0 +1,148 @@
+{
+  "sections": [
+    {
+      "id": "section-agent-001",
+      "layout": "fullWidth",
+      "splitRatio": 25,
+      "regionComponents": {
+        "main": [
+          {
+            "name": "subscriptionList-agent-001",
+            "type": "subscriptionList",
+            "option": {
+              "region": "main",
+              "variant": "detailed",
+              "features": {
+                "showStatus": true,
+                "showActions": true,
+                "showNextBilling": true,
+                "showPlanName": true
+              },
+              "title": "My Subscriptions",
+              "defaultVisible": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "section-agent-002",
+      "layout": "twoColumn",
+      "splitRatio": 50,
+      "regionComponents": {
+        "left": [
+          {
+            "name": "subscriptionDetails-agent-002",
+            "type": "subscriptionDetails",
+            "option": {
+              "region": "left",
+              "variant": "detailed",
+              "features": {
+                "showPause": true,
+                "showCancel": true,
+                "showResume": true,
+                "showRenew": true,
+                "showEntitlements": true,
+                "showShippingAddress": false
+              },
+              "title": "Subscription Details",
+              "defaultVisible": true,
+              "buttonActions": {
+                "viewUsage": {
+                  "message": {
+                    "target": "usage-agent-003",
+                    "sendVisibility": true,
+                    "dataFields": ["subscriptionId"]
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "right": [
+          {
+            "name": "billingHistory-agent-002",
+            "type": "billingHistory",
+            "option": {
+              "region": "right",
+              "features": {
+                "showDownload": true,
+                "showStatus": true,
+                "showAmount": true,
+                "showDate": true
+              },
+              "title": "Billing History",
+              "defaultVisible": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "section-agent-003",
+      "layout": "twoColumn",
+      "splitRatio": 35,
+      "regionComponents": {
+        "left": [
+          {
+            "name": "paymentMethodList-agent-003",
+            "type": "paymentMethodList",
+            "option": {
+              "region": "left",
+              "features": {
+                "showRemove": true,
+                "allowRemoveDefault": false,
+                "showAddButton": true,
+                "showStatus": true
+              },
+              "title": "Payment Methods",
+              "addButtonText": "+ Add payment method",
+              "defaultVisible": true,
+              "clickActions": {
+                "rowClick": {
+                  "target": "paymentMethodDetails-agent-003",
+                  "sendVisibility": true,
+                  "dataFields": ["paymentSourceId"]
+                }
+              }
+            }
+          }
+        ],
+        "right": [
+          {
+            "name": "paymentMethodDetails-agent-003",
+            "type": "paymentMethodDetails",
+            "option": {
+              "region": "right",
+              "features": {
+                "showRemove": true,
+                "showSetPrimary": true,
+                "showSetBackup": true,
+                "showEdit": true
+              },
+              "mode": "view",
+              "title": "Payment Method Details",
+              "defaultVisible": true,
+              "cb_radius": "medium",
+              "cb_appearance": "light",
+              "cb_layoutType": "tab"
+            }
+          },
+          {
+            "name": "usage-agent-003",
+            "type": "usage",
+            "option": {
+              "region": "right",
+              "variant": "interactive",
+              "features": {},
+              "title": "Usage & Metering",
+              "defaultVisible": false,
+              "showCloseButton": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "containerWidth": 1280
+}
