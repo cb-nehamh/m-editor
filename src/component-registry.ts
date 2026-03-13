@@ -105,7 +105,7 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showPagination', label: 'Show Pagination', default: true },
     ],
     styleKeys: [
-      'container', 'summaryCard', 'summaryTitle', 'summaryAmount', 'payNowButton',
+      'container', 'summaryCard', 'summaryTitle', 'summaryAmount', 'summaryCount', 'payNowButton',
       'filterBar', 'filterSelect', 'table', 'tableHeader', 'tableRow', 'tableRowHover',
       'tableCell', 'statusBadge', 'pagination', 'paginationButton', 'expandedRow',
       'emptyState', 'iconButton',
