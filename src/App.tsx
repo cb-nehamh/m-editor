@@ -20,9 +20,18 @@ import { Preview } from './components/Preview';
 import { AgentToggle } from './components/AgentToggle';
 import { AgentPanel } from './components/AgentPanel';
 import { AgentLoadingOverlay } from './components/AgentLoadingOverlay';
+import { BoundaryReviewModal } from './components/BoundaryReviewModal';
 import { registryMap } from './component-registry';
 import { saveConfig, fetchConfig, saveToChargebeeApp, loadAllChatHistory } from './api';
 import type { AgentMessage } from './services/agent-service';
+import type { Boundary } from './services/image-analysis-api';
+
+interface BoundaryReviewData {
+  sessionId: string;
+  boundaries: Boundary[];
+  imageWidth: number;
+  imageHeight: number;
+}
 
 const DEFAULT_DOMAIN = 'yash-pc2-test';
 
@@ -67,6 +76,7 @@ function EditorShell() {
   const [agentOverlayStatus, setAgentOverlayStatus] = useState<string | null>(null);
   const [agentPhaseIndex, setAgentPhaseIndex] = useState(0);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
+  const [boundaryReviewData, setBoundaryReviewData] = useState<BoundaryReviewData | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
@@ -268,6 +278,44 @@ function EditorShell() {
     window.open(`/preview?${params.toString()}`, '_blank');
   }
 
+  const handleBoundaryReview = useCallback(
+    (sessionId: string, boundaries: Boundary[], imageWidth: number, imageHeight: number) => {
+      setBoundaryReviewData({ sessionId, boundaries, imageWidth, imageHeight });
+    },
+    []
+  );
+
+  const handleBoundarySubmit = useCallback(
+    async (layoutConfig: SavedEditorConfig) => {
+      const id = configId || (crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''));
+
+      dispatch({ type: 'LOAD_FULL', payload: { sections: layoutConfig.sections, containerWidth: layoutConfig.containerWidth } });
+
+      try {
+        const configPayload = { sections: layoutConfig.sections, containerWidth: layoutConfig.containerWidth };
+        await saveConfig(domain, id, [configPayload] as any, 'draft');
+        setConfigStatus('draft');
+        if (!configId) {
+          setSearchParams({ domain, id, ...(cbId && { cbId }), ...(csrfToken && { csrfToken }), ...(cbOrigin && { cbOrigin }) });
+        }
+        showToast('Config generated and saved as draft!');
+      } catch (err) {
+        console.error('Save failed:', err);
+        showToast('Config loaded but save failed');
+      }
+
+      setBoundaryReviewData(null);
+
+      const successMsg: AgentMessage = {
+        role: 'agent',
+        text: 'Your portal has been generated from the uploaded design! The layout has been saved as a draft. Feel free to customize further using the inspector.',
+        timestamp: Date.now(),
+      };
+      setAgentMessages((prev) => [...prev, successMsg]);
+    },
+    [configId, domain, cbId, csrfToken, cbOrigin, dispatch, setSearchParams]
+  );
+
   const draggedDef = draggedType ? registryMap.get(draggedType) : null;
 
   return (
@@ -453,6 +501,7 @@ function EditorShell() {
                   onStatusChange={(status, idx) => { setAgentOverlayStatus(status); setAgentPhaseIndex(idx); }}
                   domain={domain}
                   configId={configId || null}
+                  onBoundaryReview={handleBoundaryReview}
                 />
               ) : (
                 <ConfigForm onClose={() => setRightOpen(false)} />
@@ -487,6 +536,20 @@ function EditorShell() {
               statusText={agentOverlayStatus}
               phaseIndex={agentPhaseIndex}
               totalPhases={9}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ===== BOUNDARY REVIEW MODAL ===== */}
+        <AnimatePresence>
+          {boundaryReviewData && (
+            <BoundaryReviewModal
+              sessionId={boundaryReviewData.sessionId}
+              boundaries={boundaryReviewData.boundaries}
+              imageWidth={boundaryReviewData.imageWidth}
+              imageHeight={boundaryReviewData.imageHeight}
+              onSubmit={handleBoundarySubmit}
+              onClose={() => setBoundaryReviewData(null)}
             />
           )}
         </AnimatePresence>

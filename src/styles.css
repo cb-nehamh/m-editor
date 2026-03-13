@@ -1241,3 +1241,378 @@ body {
   justify-content: center;
   font-size: 10px;
 }
+
+/* ═══════════════════════════════════════════
+   Boundary Review Modal
+   ═══════════════════════════════════════════ */
+
+.boundary-review-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.boundary-review-content {
+  background: var(--color-surface, #fff);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  width: 90vw;
+  max-width: 1200px;
+  height: 85vh;
+  max-height: 900px;
+  overflow: hidden;
+}
+
+.boundary-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.boundary-review-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text, #1e293b);
+  margin: 0;
+}
+
+.boundary-review-subtitle {
+  font-size: 12px;
+  color: var(--color-text-muted, #94a3b8);
+  margin: 4px 0 0;
+}
+
+.boundary-review-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.boundary-review-close:hover {
+  background: var(--color-surface-alt, #f8fafc);
+  color: var(--color-text, #1e293b);
+}
+
+.boundary-review-body {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.boundary-review-image-section {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px;
+}
+
+.boundary-review-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.boundary-review-image {
+  width: 100%;
+  display: block;
+  border-radius: 6px;
+}
+
+.boundary-overlay-rect {
+  position: absolute;
+  border: 2px solid;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.boundary-overlay-rect.discarded {
+  border-style: dashed;
+  opacity: 0.5;
+}
+.boundary-overlay-rect.hovered {
+  z-index: 10;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.boundary-overlay-label {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 0 0 4px 0;
+  white-space: nowrap;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+/* Resize handles */
+.boundary-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--handle-color, #3b82f6);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.boundary-overlay-rect.hovered .boundary-resize-handle,
+.boundary-overlay-rect:hover .boundary-resize-handle {
+  opacity: 1;
+}
+
+.boundary-resize-n  { top: -5px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.boundary-resize-s  { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.boundary-resize-e  { right: -5px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+.boundary-resize-w  { left: -5px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+.boundary-resize-nw { top: -5px;    left: -5px;   cursor: nwse-resize; }
+.boundary-resize-ne { top: -5px;    right: -5px;  cursor: nesw-resize; }
+.boundary-resize-sw { bottom: -5px; left: -5px;   cursor: nesw-resize; }
+.boundary-resize-se { bottom: -5px; right: -5px;  cursor: nwse-resize; }
+
+.boundary-review-cards {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.boundary-card {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  padding: 12px;
+  transition: all 0.2s;
+}
+.boundary-card.discarded {
+  opacity: 0.6;
+  background: var(--color-surface-alt, #f8fafc);
+}
+.boundary-card.hovered {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.boundary-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.boundary-card-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.boundary-card-id {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  flex: 1;
+}
+
+.boundary-reset-btn {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.boundary-reset-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #3b82f6;
+}
+
+.boundary-discard-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.boundary-discard-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #ef4444;
+}
+.boundary-discard-btn.restore:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #22c55e;
+}
+
+.boundary-bbox-info {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--color-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.boundary-candidates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.boundary-candidate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.boundary-candidate:hover {
+  background: var(--color-surface-alt, #f8fafc);
+}
+.boundary-candidate.selected {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.boundary-candidate input[type="radio"] {
+  accent-color: #3b82f6;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.boundary-candidate-type {
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.boundary-candidate-variant {
+  color: var(--color-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.boundary-candidate-confidence {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.boundary-review-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.boundary-review-error {
+  color: #ef4444;
+  font-size: 12px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.boundary-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.boundary-cancel-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: var(--color-text, #1e293b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.boundary-cancel-btn:hover {
+  background: var(--color-surface-alt, #f8fafc);
+}
+.boundary-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.boundary-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.boundary-submit-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+}
+.boundary-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.boundary-submit-btn .spin {
+  animation: boundary-spin 1s linear infinite;
+}
+@keyframes boundary-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
