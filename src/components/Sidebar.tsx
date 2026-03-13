@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { componentRegistry, registryMap, type ComponentDef } from '../component-registry';
 import { useEditor, LAYOUT_DEFS, type LayoutType, type EditorComponent, getActiveSection, collectAllComponents } from '../state';
+import { useTheme, type EditorTheme } from '../commons';
 
 function LayoutThumbnail({ type, label, isActive, onClick }: {
   type: LayoutType;
@@ -28,7 +29,7 @@ function LayoutThumbnail({ type, label, isActive, onClick }: {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
         padding: '8px 6px', borderRadius: 'var(--radius-md)',
         border: `2px solid ${isActive ? 'var(--color-primary)' : 'var(--color-border)'}`,
-        background: isActive ? 'var(--color-primary-light)' : '#fff',
+        background: isActive ? 'var(--color-primary-light)' : 'var(--color-surface)',
         cursor: 'pointer', transition: 'all var(--transition-fast)',
         flex: 1,
       }}
@@ -36,15 +37,15 @@ function LayoutThumbnail({ type, label, isActive, onClick }: {
       <div style={{ display: 'grid', ...columns, gap: 2, width: '100%', height: 26 }}>
         {Array.from({ length: regionCount }).map((_, i) => (
           <div key={i} style={{
-            background: isActive ? 'var(--color-primary-border)' : '#e2e8f0',
+            background: isActive ? 'var(--color-primary-border)' : 'var(--color-border)',
             borderRadius: 3,
-            border: `1px solid ${isActive ? '#93c5fd' : '#cbd5e1'}`,
+            border: `1px solid ${isActive ? 'var(--color-primary-border)' : 'var(--color-border)'}`,
           }} />
         ))}
       </div>
       <div style={{
         fontSize: 9, fontWeight: isActive ? 700 : 500,
-        color: isActive ? '#1d4ed8' : 'var(--color-text-muted)',
+        color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
         textAlign: 'center', lineHeight: 1.2,
       }}>
         {label}
@@ -92,7 +93,7 @@ function SectionBlock({ title, defaultOpen = true, badge, children }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ borderBottom: '1px solid rgba(226, 232, 240, 0.5)' }}>
+    <div style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
       <button
         onClick={() => setOpen(!open)}
         style={{
@@ -140,8 +141,57 @@ function SectionBlock({ title, defaultOpen = true, badge, children }: {
   );
 }
 
+function ThemeCard({ value, label, isActive, onClick }: {
+  value: EditorTheme;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const isBlack = value === 'dark';
+  return (
+    <motion.button
+      whileHover={{ y: -1, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+        padding: '8px 6px', borderRadius: 'var(--radius-md)',
+        border: `2px solid ${isActive ? 'var(--color-primary)' : 'var(--color-border)'}`,
+        background: isActive ? 'var(--color-primary-light)' : 'var(--color-surface)',
+        cursor: 'pointer', transition: 'all var(--transition-fast)',
+        flex: 1,
+      }}
+    >
+      <div style={{
+        width: '100%', height: 32, borderRadius: 4,
+        background: isBlack ? '#0a0a0a' : '#ffffff',
+        border: `1px solid ${isBlack ? '#333' : '#e2e8f0'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+        padding: '0 6px',
+      }}>
+        <div style={{
+          width: '60%', height: 4, borderRadius: 2,
+          background: isBlack ? '#333' : '#e2e8f0',
+        }} />
+        <div style={{
+          width: '20%', height: 4, borderRadius: 2,
+          background: isBlack ? '#444' : '#cbd5e1',
+        }} />
+      </div>
+      <div style={{
+        fontSize: 9, fontWeight: isActive ? 700 : 500,
+        color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+        textAlign: 'center', lineHeight: 1.2,
+      }}>
+        {label}
+      </div>
+    </motion.button>
+  );
+}
+
 export function Sidebar() {
   const { state, dispatch } = useEditor();
+  const { theme, setTheme } = useTheme();
   const activeSection = getActiveSection(state);
   const [search, setSearch] = useState('');
 
@@ -163,7 +213,7 @@ export function Sidebar() {
 
       <div className="floating-panel-body" style={{ flex: 1 }}>
         {/* Section tabs */}
-        <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(226, 232, 240, 0.5)' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
             {state.sections.map((s, i) => (
               <motion.button
@@ -176,7 +226,7 @@ export function Sidebar() {
                   fontWeight: s.id === state.activeSectionId ? 700 : 500,
                   background: s.id === state.activeSectionId
                     ? 'linear-gradient(135deg, #3b82f6, #2563eb)'
-                    : '#f1f5f9',
+                    : 'var(--color-surface-alt)',
                   color: s.id === state.activeSectionId ? '#fff' : 'var(--color-text-muted)',
                   border: 'none', borderRadius: 5, cursor: 'pointer',
                   transition: 'all var(--transition-fast)',
@@ -188,6 +238,24 @@ export function Sidebar() {
             ))}
           </div>
         </div>
+
+        {/* Theme picker */}
+        <SectionBlock title="Theme" defaultOpen={true}>
+          <div style={{ display: 'flex', gap: 5 }}>
+            <ThemeCard
+              value="light"
+              label="White"
+              isActive={theme === 'light'}
+              onClick={() => { setTheme('light'); dispatch({ type: 'SET_THEME', payload: 'light' }); }}
+            />
+            <ThemeCard
+              value="dark"
+              label="Black"
+              isActive={theme === 'dark'}
+              onClick={() => { setTheme('dark'); dispatch({ type: 'SET_THEME', payload: 'dark' }); }}
+            />
+          </div>
+        </SectionBlock>
 
         {/* Layout picker */}
         {activeSection && (
@@ -261,7 +329,7 @@ export function Sidebar() {
                           background: isSelected ? 'var(--color-primary-light)' : 'transparent',
                           borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
                           fontSize: 11, fontWeight: isSelected ? 600 : 400,
-                          color: isSelected ? '#1e40af' : 'var(--color-text-secondary)',
+                          color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                           transition: 'all 0.1s',
                         }}
                       >

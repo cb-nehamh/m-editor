@@ -29,17 +29,21 @@ export interface LayoutSection {
   regionComponents: Record<string, EditorComponent[]>;
 }
 
+export type EditorThemeMode = 'light' | 'dark';
+
 export interface EditorState {
   sections: LayoutSection[];
   activeSectionId: string;
   selectedId: string | null;
   tree: EditorComponent[];
   containerWidth: number;
+  theme: EditorThemeMode;
 }
 
 export interface SavedEditorConfig {
   sections: LayoutSection[];
   containerWidth?: number;
+  theme?: EditorThemeMode;
 }
 
 export type EditorAction =
@@ -60,7 +64,8 @@ export type EditorAction =
   | { type: 'REMOVE_SECTION'; payload: string }
   | { type: 'SELECT_SECTION'; payload: string }
   | { type: 'REORDER_SECTIONS'; payload: { fromIndex: number; toIndex: number } }
-  | { type: 'SET_CONTAINER_WIDTH'; payload: number };
+  | { type: 'SET_CONTAINER_WIDTH'; payload: number }
+  | { type: 'SET_THEME'; payload: EditorThemeMode };
 
 function createSection(layout: LayoutType = 'fullWidth'): LayoutSection {
   const def = LAYOUT_DEFS.find((l) => l.type === layout)!;
@@ -82,6 +87,7 @@ const initialState: EditorState = {
   selectedId: null,
   tree: [],
   containerWidth: 1100,
+  theme: 'light',
 };
 
 function setNestedValue(obj: Record<string, any>, path: string, value: any): Record<string, any> {
@@ -324,12 +330,15 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
     case 'SET_CONTAINER_WIDTH':
       return { ...state, containerWidth: Math.max(320, Math.min(2400, action.payload)) };
 
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+
     case 'SET_TREE':
     case 'LOAD_CONFIG':
       return { ...state, tree: action.payload, selectedId: null };
 
     case 'LOAD_FULL': {
-      const { sections: loadedSections, containerWidth: loadedWidth } = action.payload;
+      const { sections: loadedSections, containerWidth: loadedWidth, theme: loadedTheme } = action.payload;
       const sections = loadedSections.length > 0 ? loadedSections : [createSection('fullWidth')];
       return {
         ...state,
@@ -338,6 +347,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         tree: buildTree(sections),
         selectedId: null,
         ...(loadedWidth != null && { containerWidth: loadedWidth }),
+        ...(loadedTheme != null && { theme: loadedTheme }),
       };
     }
 
