@@ -51,10 +51,16 @@ function resolveEditorStyles(editorStyles: Record<string, any> | undefined): Rec
   const resolved: Record<string, React.CSSProperties> = {};
   for (const [key, val] of Object.entries(editorStyles)) {
     if (!val || typeof val !== 'object') continue;
-    const style: React.CSSProperties = {};
-    if (val.color) style.color = val.color;
-    if (val.fontSize) style.fontSize = `${val.fontSize}px`;
-    if (Object.keys(style).length > 0) resolved[key] = style;
+    const style: Record<string, any> = {};
+    for (const [prop, v] of Object.entries(val)) {
+      if (v === '' || v === undefined || v === null) continue;
+      if (prop === 'fontSize' && typeof v === 'number') {
+        style[prop] = `${v}px`;
+      } else {
+        style[prop] = v;
+      }
+    }
+    if (Object.keys(style).length > 0) resolved[key] = style as React.CSSProperties;
   }
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }

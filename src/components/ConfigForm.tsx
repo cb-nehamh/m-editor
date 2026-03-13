@@ -496,7 +496,7 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
 }) {
   const current = styles[styleKey] ?? {};
   const [open, setOpen] = React.useState(false);
-  const hasValues = current.color || current.fontSize;
+  const hasValues = current.color || current.fontSize || current.background;
 
   return (
     <div style={{
@@ -537,8 +537,9 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
             transition={{ duration: 0.15 }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{ padding: '7px 10px', display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
+            <div style={{ padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 3 }}>Color</div>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
@@ -567,6 +568,26 @@ function StyleEditor({ label, styleKey, styles, onChange }: {
                   className="input"
                   style={{ textAlign: 'center', padding: '3px 4px', fontSize: 10 }}
             />
+          </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 3 }}>Background</div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="color"
+                value={current.background?.startsWith('#') ? current.background : '#1e293b'}
+                onChange={(e) => onChange(`styles.${styleKey}.background`, e.target.value)}
+                style={{ width: 26, height: 26, border: '1px solid var(--color-border)', borderRadius: 4, padding: 0, cursor: 'pointer' }}
+              />
+              <input
+                type="text"
+                value={current.background || ''}
+                onChange={(e) => onChange(`styles.${styleKey}.background`, e.target.value)}
+                placeholder="color or gradient"
+                className="input"
+                style={{ flex: 1, padding: '3px 6px', fontSize: 10, fontFamily: 'monospace' }}
+              />
+            </div>
           </div>
         </div>
           </motion.div>

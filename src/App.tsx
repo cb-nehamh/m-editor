@@ -17,8 +17,12 @@ import { EditorProvider, useEditor, type SavedEditorConfig } from './state';
 import { Sidebar } from './components/Sidebar';
 import { ConfigForm } from './components/ConfigForm';
 import { Preview } from './components/Preview';
+import { AgentToggle } from './components/AgentToggle';
+import { AgentPanel } from './components/AgentPanel';
+import { AgentLoadingOverlay } from './components/AgentLoadingOverlay';
 import { registryMap } from './component-registry';
-import { saveConfig, fetchConfig, saveToChargebeeApp } from './api';
+import { saveConfig, fetchConfig, saveToChargebeeApp, loadAllChatHistory } from './api';
+import type { AgentMessage } from './services/agent-service';
 
 const DEFAULT_DOMAIN = 'yash-pc2-test';
 
@@ -58,6 +62,12 @@ function EditorShell() {
   const [canvasScale, setCanvasScale] = useState(0.85);
   const [isDraggingReorder, setIsDraggingReorder] = useState(false);
 
+  const [rightPanelMode, setRightPanelMode] = useState<'inspector' | 'agent'>('inspector');
+  const [agentProcessing, setAgentProcessing] = useState(false);
+  const [agentOverlayStatus, setAgentOverlayStatus] = useState<string | null>(null);
+  const [agentPhaseIndex, setAgentPhaseIndex] = useState(0);
+  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
   const configId = searchParams.get('id') || '';
@@ -87,6 +97,13 @@ function EditorShell() {
   }, [domain, configId]);
 
   useEffect(() => {
+    if (!configId) return;
+    loadAllChatHistory(domain, configId)
+      .then((msgs) => { if (msgs.length > 0) setAgentMessages(msgs); })
+      .catch(() => {});
+  }, [domain, configId]);
+
+  useEffect(() => {
     if (state.selectedId && !rightOpen) setRightOpen(true);
   }, [state.selectedId]);
 
@@ -95,6 +112,11 @@ function EditorShell() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
       if (e.key === 'l' || e.key === 'L') { e.preventDefault(); setLeftOpen((v) => !v); }
       if (e.key === 'r' || e.key === 'R') { e.preventDefault(); setRightOpen((v) => !v); }
+      if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setRightPanelMode((v) => v === 'agent' ? 'inspector' : 'agent');
+        setRightOpen(true);
+      }
       if (e.key === 'Escape') { dispatch({ type: 'SELECT', payload: null }); }
     }
     window.addEventListener('keydown', handleKey);
@@ -404,7 +426,7 @@ function EditorShell() {
           </button>
         )}
 
-        {/* ===== FLOATING RIGHT PANEL (Config) ===== */}
+        {/* ===== FLOATING RIGHT PANEL (Config / Agent) ===== */}
         <AnimatePresence>
           {rightOpen && (
             <motion.div
@@ -421,7 +443,20 @@ function EditorShell() {
               exit={{ x: 340, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             >
-              <ConfigForm onClose={() => setRightOpen(false)} />
+              {rightPanelMode === 'agent' ? (
+                <AgentPanel
+                  onClose={() => setRightOpen(false)}
+                  dispatch={dispatch}
+                  messages={agentMessages}
+                  setMessages={setAgentMessages}
+                  onProcessingChange={setAgentProcessing}
+                  onStatusChange={(status, idx) => { setAgentOverlayStatus(status); setAgentPhaseIndex(idx); }}
+                  domain={domain}
+                  configId={configId || null}
+                />
+              ) : (
+                <ConfigForm onClose={() => setRightOpen(false)} />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -435,6 +470,26 @@ function EditorShell() {
             &#x25C0;
           </button>
         )}
+
+        {/* ===== FLOATING AGENT TOGGLE ===== */}
+        <AgentToggle
+          active={rightPanelMode === 'agent'}
+          onClick={() => {
+            setRightPanelMode((v) => v === 'agent' ? 'inspector' : 'agent');
+            setRightOpen(true);
+          }}
+        />
+
+        {/* ===== AGENT LOADING OVERLAY ===== */}
+        <AnimatePresence>
+          {agentProcessing && agentOverlayStatus && (
+            <AgentLoadingOverlay
+              statusText={agentOverlayStatus}
+              phaseIndex={agentPhaseIndex}
+              totalPhases={9}
+            />
+          )}
+        </AnimatePresence>
 
         {/* ===== TOAST ===== */}
         <AnimatePresence>
