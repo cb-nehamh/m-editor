@@ -781,11 +781,23 @@ body {
    AGENT MODE
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Floating Toggle Container ── */
+
+.agent-toggle-floating {
+  position: fixed;
+  right: 160px;
+  bottom: 28px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* ── Toggle Button ── */
 
 .agent-toggle-btn {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: radial-gradient(circle at 40% 40%, #1e293b, #0f172a);
@@ -794,19 +806,20 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.0), 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 3;
+  box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.0), 0 4px 20px rgba(0,0,0,0.35);
   transition: box-shadow 0.3s;
 }
 .agent-toggle-btn:hover {
-  box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.3), 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.3), 0 6px 24px rgba(0,0,0,0.3);
 }
 .agent-toggle-active {
-  box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.6), 0 0 20px rgba(163, 230, 53, 0.25) !important;
+  box-shadow: 0 0 0 2.5px rgba(163, 230, 53, 0.6), 0 0 28px rgba(163, 230, 53, 0.3) !important;
 }
 
 .agent-toggle-orb {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   position: relative;
 }
 
@@ -822,33 +835,125 @@ body {
   animation: agent-orbit-1 2.5s linear infinite;
 }
 .agent-toggle-ring-2 {
-  inset: 2px;
+  inset: 3px;
   border-bottom-color: rgba(74, 222, 128, 0.7);
   border-left-color: rgba(74, 222, 128, 0.3);
   animation: agent-orbit-2 3.5s linear infinite reverse;
 }
 .agent-toggle-ring-3 {
-  inset: 4px;
+  inset: 6px;
   border-top-color: rgba(250, 204, 21, 0.5);
   border-left-color: rgba(250, 204, 21, 0.2);
   animation: agent-orbit-3 2s linear infinite;
 }
 .agent-toggle-core {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #a3e635;
-  box-shadow: 0 0 6px 2px rgba(163, 230, 53, 0.6);
+  box-shadow: 0 0 8px 3px rgba(163, 230, 53, 0.6);
   animation: agent-core-pulse 2s ease-in-out infinite;
 }
 
 @keyframes agent-orbit-1 { to { transform: rotate(360deg); } }
 @keyframes agent-orbit-2 { to { transform: rotate(360deg); } }
 @keyframes agent-orbit-3 { to { transform: rotate(360deg); } }
+
+/* ── Mascot (peeks above the orb) ── */
+
+.agent-mascot {
+  position: absolute;
+  bottom: 36px;
+  z-index: 2;
+}
+.agent-mascot-face {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #a3e635, #65a30d);
+  position: relative;
+  box-shadow: 0 2px 10px rgba(101, 163, 13, 0.4);
+}
+.agent-mascot-eye {
+  position: absolute;
+  width: 5px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0f172a;
+  top: 13px;
+}
+.agent-mascot-eye-l { left: 9px; }
+.agent-mascot-eye-r { right: 9px; }
+
+.agent-mascot-mouth {
+  position: absolute;
+  width: 10px;
+  height: 5px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border: 2px solid #0f172a;
+  border-top: none;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.agent-mascot-antenna {
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: #65a30d;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+.agent-mascot-antenna::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a3e635;
+  box-shadow: 0 0 6px 2px rgba(163, 230, 53, 0.5);
+  animation: agent-core-pulse 2s ease-in-out infinite;
+}
+
+/* ── Tooltip Speech Bubble ── */
+
+.agent-tooltip-bubble {
+  position: absolute;
+  bottom: 80px;
+  white-space: nowrap;
+  background: #fff;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  z-index: 4;
+  pointer-events: none;
+  line-height: 1.4;
+}
+.agent-tooltip-tail {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #fff;
+}
 @keyframes agent-core-pulse {
   0%, 100% { box-shadow: 0 0 6px 2px rgba(163, 230, 53, 0.6); }
   50% { box-shadow: 0 0 12px 4px rgba(163, 230, 53, 0.9); }

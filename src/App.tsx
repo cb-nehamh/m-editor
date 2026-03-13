@@ -348,14 +348,6 @@ function EditorShell() {
             {rightOpen ? '\u25E8' : '\u25A7'}
           </button>
 
-          <AgentToggle
-            active={rightPanelMode === 'agent'}
-            onClick={() => {
-              setRightPanelMode((v) => v === 'agent' ? 'inspector' : 'agent');
-              setRightOpen(true);
-            }}
-          />
-
           <div className="toolbar-divider" />
 
           <button className="btn-toolbar" onClick={() => dispatch({ type: 'ADD_SECTION' })}>
@@ -478,6 +470,15 @@ function EditorShell() {
             &#x25C0;
           </button>
         )}
+
+        {/* ===== FLOATING AGENT TOGGLE ===== */}
+        <AgentToggle
+          active={rightPanelMode === 'agent'}
+          onClick={() => {
+            setRightPanelMode((v) => v === 'agent' ? 'inspector' : 'agent');
+            setRightOpen(true);
+          }}
+        />
 
         {/* ===== AGENT LOADING OVERLAY ===== */}
         <AnimatePresence>
