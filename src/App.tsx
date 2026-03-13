@@ -21,6 +21,7 @@ import { Preview } from './components/Preview';
 import { AgentToggle } from './components/AgentToggle';
 import { AgentPanel } from './components/AgentPanel';
 import { AgentLoadingOverlay } from './components/AgentLoadingOverlay';
+import { CodeSnippetModal } from './components/CodeSnippetModal';
 import { registryMap } from './component-registry';
 import { saveConfig, fetchConfig, saveToChargebeeApp, loadAllChatHistory } from './api';
 import type { AgentMessage } from './services/agent-service';
@@ -69,6 +70,7 @@ function EditorShell() {
   const [agentOverlayStatus, setAgentOverlayStatus] = useState<string | null>(null);
   const [agentPhaseIndex, setAgentPhaseIndex] = useState(0);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
+  const [snippetOpen, setSnippetOpen] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
@@ -393,6 +395,9 @@ function EditorShell() {
           >
             {saving ? '...' : 'Publish'}
           </button>
+          <button className="btn-toolbar" onClick={() => setSnippetOpen(true)} title="Get embed code snippet">
+            &lt;/&gt; Snippet
+          </button>
           <button className="btn-toolbar btn-toolbar-accent" onClick={handlePreview}>
             Preview &#x2197;
           </button>
@@ -523,6 +528,13 @@ function EditorShell() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <CodeSnippetModal
+          open={snippetOpen}
+          onClose={() => setSnippetOpen(false)}
+          configId={configId}
+          domain={domain}
+        />
       </div>
 
       <DragOverlay>
