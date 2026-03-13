@@ -87,7 +87,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
   });
 
   const mountOptionKey = useMemo(() => {
-    const { spacing, ...rest } = (node.option ?? {}) as any;
+    const { spacing, titleText, descriptionText, ...rest } = (node.option ?? {}) as any;
     return JSON.stringify({ name: node.name, type: node.type, ...rest });
   }, [node.name, node.type, node.option]);
 
@@ -129,6 +129,25 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
       }
     };
   }, [mountOptionKey]);
+
+  useEffect(() => {
+    if (!mountedRef.current || !node.name) return;
+    const mjs = (window as any).MJS;
+    if (!mjs?.updateConfig) return;
+    const hostId = `preview-host-${node.name}`;
+    const widgetStyles = resolveEditorStyles(node.option?.styles);
+    const config = {
+      name: node.name,
+      type: node.type,
+      option: {
+        ...node.option,
+        ...(widgetStyles ? { styles: widgetStyles } : {}),
+        _configuredMode: node.option?.mode,
+        mode: 'editor',
+      },
+    };
+    mjs.updateConfig(node.name, config);
+  }, [node.option?.titleText, node.option?.descriptionText, node.option?.styles, node.name, node.type, node.option]);
 
   useEffect(() => {
     if (!mountedRef.current) return;
@@ -178,18 +197,6 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
         }}
         title="Remove"
       >{'\u00D7'}</button>
-
-      {node.option?.titleText ? (() => {
-        const headingStyle = node.option?.styles?.heading ?? {};
-        const resolvedHeadingStyle: React.CSSProperties = {
-          fontSize: headingStyle.fontSize ? `${headingStyle.fontSize}px` : '15px',
-          fontWeight: 700,
-          color: headingStyle.color || 'var(--color-text)',
-          margin: 0,
-          padding: '12px 16px 4px 36px',
-        };
-        return <h3 style={resolvedHeadingStyle}>{node.option.titleText}</h3>;
-      })() : null}
 
       <div ref={hostRef} className="mjs-widget-host" style={{ minHeight: 60, padding: '0 8px 8px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }} />
 

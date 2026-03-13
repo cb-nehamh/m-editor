@@ -263,11 +263,11 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
         <FormSection label="Title Text">
           <input
             type="text"
-                value={option.titleText ?? ''}
-                placeholder={def.label}
+            value={option.titleText ?? ''}
+            placeholder={def.label}
             onChange={(e) => updateOption('titleText', e.target.value)}
-                className="input"
-                style={{ fontSize: 12 }}
+            className="input"
+            style={{ fontSize: 12 }}
           />
         </FormSection>
         <StyleEditor
