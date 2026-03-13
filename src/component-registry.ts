@@ -258,7 +258,8 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'showTrialBanner', label: 'Show Trial Banner', default: false },
       { key: 'showDiscounts', label: 'Show Discounts', default: true },
       { key: 'showScheduledChanges', label: 'Show Scheduled Changes', default: true, visibleWhen: { variant: ['standard', 'detailed'] } },
-      { key: 'showEntitledFeatures', label: 'Show Entitled Features', default: true, visibleWhen: { variant: ['detailed'] } },
+      { key: 'showEntitledFeatures', label: 'Show Entitlements', default: true },
+      { key: 'showViewUsage', label: 'Show View Usage Button', default: true },
       { key: 'showSkip', label: 'Show Skip Delivery', default: false },
       { key: 'showBackToDetails', label: 'Show Back to Details Link', default: true },
     ],
@@ -313,6 +314,10 @@ export const componentRegistry: ComponentDef[] = [
       { key: 'skip', label: 'Skip Next Delivery', standardActions: [], dataFields: [
         { key: 'subscriptionId', label: 'Subscription ID' },
       ]},
+      { key: 'viewUsage', label: 'View Usage', standardActions: [], dataFields: [
+        { key: 'subscriptionId', label: 'Subscription ID' },
+        { key: 'planName', label: 'Plan Name' },
+      ]},
     ],
   },
   {
@@ -363,6 +368,8 @@ export const componentRegistry: ComponentDef[] = [
     options: [
       { key: 'title', label: 'Title', type: 'string', default: 'Payment Methods' },
       { key: 'addButtonText', label: 'Add Button Text', type: 'string', default: '+ Add payment method' },
+      { key: 'chargebee_site', label: 'Chargebee Site', type: 'string', default: '' },
+      { key: 'chargebee_publishable_key', label: 'Chargebee Publishable Key', type: 'string', default: '' },
     ],
     features: [
       { key: 'showRemove', label: 'Show Remove', default: true },
@@ -384,9 +391,7 @@ export const componentRegistry: ComponentDef[] = [
       ]},
     ],
     buttonActions: [
-      { key: 'addPaymentMethod', label: 'Add Payment Method', standardActions: [
-        { value: 'manage_payment_sources', label: 'Open Payment Management', description: 'Opens Chargebee manage payment sources hosted page' },
-      ], dataFields: []},
+      { key: 'addPaymentMethod', label: 'Add Payment Method', standardActions: [], dataFields: []},
       { key: 'removePaymentMethod', label: 'Remove Payment Method', standardActions: [
         { value: 'delete_payment_source', label: 'Delete via API', description: 'Deletes payment source via Chargebee API' },
       ], dataFields: [
@@ -535,7 +540,6 @@ export const componentRegistry: ComponentDef[] = [
     icon: React.createElement(BarChart3, { size: 16 }),
     category: 'business',
     isContainer: false,
-    comingSoon: true,
     variants: [
       { value: 'allInvoices', label: 'All Invoices' },
       { value: 'singleInvoice', label: 'Single Invoice' },
@@ -585,6 +589,7 @@ export const componentRegistry: ComponentDef[] = [
 
 const sharedOptions: OptionField[] = [
   { key: 'defaultVisible', label: 'Visible by Default', type: 'boolean', default: true },
+  { key: 'showCloseButton', label: 'Show Close Button', type: 'boolean', default: true },
   { key: 'descriptionText', label: 'Description Text', type: 'string', default: '' },
 ];
 

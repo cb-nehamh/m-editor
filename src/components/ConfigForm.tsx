@@ -752,6 +752,21 @@ function ClickActionsSection({ actions, option, selectedId, onChange }: {
               </label>
             </div>
 
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 6, padding: '3px 0',
+            }}>
+              <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Send Reload</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={cfg.sendReload ?? false}
+                  onChange={(e) => onChange(`clickActions.${action.key}.sendReload`, e.target.checked)}
+                />
+                <span className="toggle-slider" />
+              </label>
+            </div>
+
             {/* Data field chips */}
             {action.dataFields.length > 0 && (
               <div>
@@ -891,6 +906,21 @@ function ButtonActionsSection({ actions, option, selectedId, onChange }: {
                       type="checkbox"
                       checked={cfg.message?.sendVisibility ?? false}
                       onChange={(e) => onChange(`buttonActions.${action.key}.message.sendVisibility`, e.target.checked)}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  padding: '3px 0',
+                }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Send Reload</span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={cfg.message?.sendReload ?? false}
+                      onChange={(e) => onChange(`buttonActions.${action.key}.message.sendReload`, e.target.checked)}
                     />
                     <span className="toggle-slider" />
                   </label>
