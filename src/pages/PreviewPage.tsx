@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchConfig, createPortalSession } from '../api';
 import { buildTree } from '../state';
+import { type EditorTheme, THEMES } from '../commons/theme';
+import { applyDarkModeToShadow } from '../commons/dark-mode-shadow-css';
 
 const CUSTOMERS = [
   'tier-test1',
@@ -20,8 +22,19 @@ export function PreviewPage() {
   const [configLoading, setConfigLoading] = useState(false);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<EditorTheme>('light');
   const portalRef = useRef<HTMLDivElement>(null);
   const mountGenRef = useRef(0);
+
+  function applyPreviewTheme(theme: EditorTheme) {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    const tokens = THEMES[theme];
+    Object.entries(tokens).forEach(([key, value]) => {
+      const cssVar = '--' + key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      root.style.setProperty(cssVar, value);
+    });
+  }
 
   useEffect(() => {
     if (!configId) {
@@ -34,6 +47,11 @@ export function PreviewPage() {
         }
       } else {
         setError('No config ID or preview data provided');
+      }
+      const storedTheme = sessionStorage.getItem('mjs-preview-theme') as EditorTheme | null;
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        setPreviewTheme(storedTheme);
+        applyPreviewTheme(storedTheme);
       }
       return;
     }
@@ -51,6 +69,10 @@ export function PreviewPage() {
           } else {
             setConfig([raw]);
           }
+          if (inner?.theme === 'light' || inner?.theme === 'dark') {
+            setPreviewTheme(inner.theme);
+            applyPreviewTheme(inner.theme);
+          }
         } else {
           setError('Config not found');
         }
@@ -58,6 +80,16 @@ export function PreviewPage() {
       .catch((err) => setError(err.message))
       .finally(() => setConfigLoading(false));
   }, [configId]);
+
+  function injectDarkModeIntoPortal(isDark: boolean) {
+    if (!portalRef.current) return;
+    const widgetHosts = portalRef.current.querySelectorAll(':scope > div');
+    widgetHosts.forEach((host) => {
+      const shadowHost = host.querySelector(':scope > div');
+      const sr = shadowHost?.shadowRoot ?? null;
+      applyDarkModeToShadow(sr, isDark);
+    });
+  }
 
   const generateTokenAndMount = useCallback(async (customerId: string) => {
     if (!config) return;
@@ -87,12 +119,16 @@ export function PreviewPage() {
         domain: DEFAULT_DOMAIN,
         token: session.token,
       });
+
+      requestAnimationFrame(() => {
+        injectDarkModeIntoPortal(previewTheme === 'dark');
+      });
     } catch (err: any) {
       if (gen !== mountGenRef.current) return;
       setTokenLoading(false);
       setError(`Failed to create session for ${customerId}: ${err.message}`);
     }
-  }, [config]);
+  }, [config, previewTheme]);
 
   useEffect(() => {
     if (config) {
@@ -113,7 +149,7 @@ export function PreviewPage() {
       flexDirection: 'column',
       height: '100vh',
       fontFamily: 'var(--font-sans, system-ui)',
-      background: '#f0f2f5',
+      background: 'var(--color-bg, #f0f2f5)',
     }}>
       <header style={{
         display: 'flex',
@@ -220,10 +256,9 @@ export function PreviewPage() {
         )}
 
         {!configLoading && !error && (
-          <div style={{
+          <div className="mjs-widget-host" style={{
             maxWidth: '1200px',
             margin: '0 auto',
-            background: '#fff',
             borderRadius: '12px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
             minHeight: '400px',
@@ -234,10 +269,10 @@ export function PreviewPage() {
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(255,255,255,0.8)',
+                background: previewTheme === 'dark' ? 'rgba(20,20,20,0.8)' : 'rgba(255,255,255,0.8)',
                 borderRadius: '12px',
                 zIndex: 10,
-                fontSize: '14px', color: '#64748b',
+                fontSize: '14px', color: 'var(--color-text-muted, #64748b)',
               }}>
                 Loading customer data...
               </div>

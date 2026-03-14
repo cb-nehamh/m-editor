@@ -5,6 +5,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, LAYOUT_DEFS, type EditorComponent, type LayoutSection } from '../state';
 import { registryMap } from '../component-registry';
+import { useTheme } from '../commons/ThemeContext';
+import { applyDarkModeToShadow, getShadowRoot } from '../commons/dark-mode-shadow-css';
 
 function RegionDropZone({ region, regionLabel, sectionId, children }: {
   region: string;
@@ -69,6 +71,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
   const hostRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef<string | null>(null);
   const { dispatch, state } = useEditor();
+  const { theme } = useTheme();
   const isSelected = state.selectedId === node.name;
 
   const {
@@ -84,7 +87,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
   });
 
   const mountOptionKey = useMemo(() => {
-    const { spacing, ...rest } = (node.option ?? {}) as any;
+    const { spacing, titleText, descriptionText, ...rest } = (node.option ?? {}) as any;
     return JSON.stringify({ name: node.name, type: node.type, ...rest });
   }, [node.name, node.type, node.option]);
 
@@ -127,6 +130,36 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
     };
   }, [mountOptionKey]);
 
+  useEffect(() => {
+    if (!mountedRef.current || !node.name) return;
+    const mjs = (window as any).MJS;
+    if (!mjs?.updateConfig) return;
+    const hostId = `preview-host-${node.name}`;
+    const widgetStyles = resolveEditorStyles(node.option?.styles);
+    const config = {
+      name: node.name,
+      type: node.type,
+      option: {
+        ...node.option,
+        ...(widgetStyles ? { styles: widgetStyles } : {}),
+        _configuredMode: node.option?.mode,
+        mode: 'editor',
+      },
+    };
+    mjs.updateConfig(node.name, config);
+  }, [node.option?.titleText, node.option?.descriptionText, node.option?.styles, node.name, node.type, node.option]);
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    const apply = () => {
+      const sr = getShadowRoot(hostRef.current);
+      applyDarkModeToShadow(sr, theme === 'dark');
+    };
+    apply();
+    const id = requestAnimationFrame(() => apply());
+    return () => cancelAnimationFrame(id);
+  }, [theme, mountOptionKey]);
+
   const def = registryMap.get(node.type);
   const margin = node.option?.spacing?.margin ?? {};
   const containerStyle: React.CSSProperties = {
@@ -157,7 +190,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-sm)',
-          background: '#fff', cursor: 'pointer',
+          background: 'var(--color-surface)', cursor: 'pointer',
           color: 'var(--color-text-muted)', fontSize: 13, lineHeight: 1,
           opacity: isSelected ? 1 : 0,
           transition: 'opacity var(--transition-fast)',
@@ -165,25 +198,13 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
         title="Remove"
       >{'\u00D7'}</button>
 
-      {node.option?.titleText ? (() => {
-        const headingStyle = node.option?.styles?.heading ?? {};
-        const resolvedHeadingStyle: React.CSSProperties = {
-          fontSize: headingStyle.fontSize ? `${headingStyle.fontSize}px` : '15px',
-          fontWeight: 700,
-          color: headingStyle.color || 'var(--color-text)',
-          margin: 0,
-          padding: '12px 16px 4px 36px',
-        };
-        return <h3 style={resolvedHeadingStyle}>{node.option.titleText}</h3>;
-      })() : null}
-
-      <div ref={hostRef} style={{ minHeight: 60, padding: '0 8px 8px' }} />
+      <div ref={hostRef} className="mjs-widget-host" style={{ minHeight: 60, padding: '0 8px 8px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }} />
 
       {node.option?.defaultVisible === false && (
         <div style={{
           padding: '6px 12px', margin: '0 8px 8px',
-          background: '#fef3c7', border: '1px solid #fde68a',
-          borderRadius: 6, fontSize: 11, color: '#92400e',
+          background: 'var(--color-warning-light)', border: '1px solid var(--color-warning)',
+          borderRadius: 6, fontSize: 11, color: 'var(--color-warning)',
         }}>
           Hidden by default &mdash; will show when it receives a visibility message
         </div>
@@ -224,8 +245,8 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{
             fontSize: 11, fontWeight: 700,
-            color: isActive ? '#1d4ed8' : 'var(--color-text-muted)',
-            background: isActive ? '#dbeafe' : '#e2e8f0',
+            color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            background: isActive ? 'var(--color-primary-light)' : 'var(--color-surface-alt)',
             padding: '3px 10px', borderRadius: 6,
             transition: 'all var(--transition-fast)',
           }}>
@@ -314,7 +335,7 @@ function CollapsibleJsonViewer() {
           display: 'flex', alignItems: 'center', gap: 8, width: '100%',
           padding: '10px 16px', fontSize: 12, fontWeight: 600,
           color: 'var(--color-text-muted)',
-          background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)',
+          background: 'var(--color-surface)', backdropFilter: 'blur(8px)',
           border: '1px solid var(--color-border)', borderRadius: 8,
           cursor: 'pointer', transition: 'all 0.15s',
         }}

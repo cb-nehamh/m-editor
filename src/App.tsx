@@ -14,6 +14,7 @@ import { useSearchParams } from 'react-router-dom';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorProvider, useEditor, type SavedEditorConfig } from './state';
+import { ThemeProvider, useTheme } from './commons';
 import { Sidebar } from './components/Sidebar';
 import { ConfigForm } from './components/ConfigForm';
 import { Preview } from './components/Preview';
@@ -21,6 +22,7 @@ import { AgentToggle } from './components/AgentToggle';
 import { AgentPanel } from './components/AgentPanel';
 import { AgentLoadingOverlay } from './components/AgentLoadingOverlay';
 import { BoundaryReviewModal } from './components/BoundaryReviewModal';
+import { CodeSnippetModal } from './components/CodeSnippetModal';
 import { registryMap } from './component-registry';
 import { saveConfig, fetchConfig, saveToChargebeeApp, loadAllChatHistory } from './api';
 import type { AgentMessage } from './services/agent-service';
@@ -51,7 +53,7 @@ function ZoomControls({ scale }: { scale: number }) {
         {pct}%
       </button>
       <button className="zoom-btn" onClick={() => zoomIn(0.2)} title="Zoom in">+</button>
-      <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.08)', margin: '0 2px' }} />
+      <div style={{ width: 1, height: 16, background: 'var(--color-border)', margin: '0 2px' }} />
       <button className="zoom-btn" onClick={() => resetTransform()} title="Fit to view" style={{ fontSize: '12px' }}>
         &#x2922;
       </button>
@@ -61,6 +63,7 @@ function ZoomControls({ scale }: { scale: number }) {
 
 function EditorShell() {
   const { state, dispatch } = useEditor();
+  const { theme, setTheme } = useTheme();
   const [draggedType, setDraggedType] = React.useState<string | null>(null);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
@@ -77,6 +80,7 @@ function EditorShell() {
   const [agentPhaseIndex, setAgentPhaseIndex] = useState(0);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [boundaryReviewData, setBoundaryReviewData] = useState<BoundaryReviewData | null>(null);
+  const [snippetOpen, setSnippetOpen] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = searchParams.get('domain') || DEFAULT_DOMAIN;
@@ -94,7 +98,8 @@ function EditorShell() {
           const config = res.config as any;
           const inner = Array.isArray(config) ? config[0] : config;
           if (inner?.sections) {
-            dispatch({ type: 'LOAD_FULL', payload: { sections: inner.sections, containerWidth: inner.containerWidth } });
+            dispatch({ type: 'LOAD_FULL', payload: { sections: inner.sections, containerWidth: inner.containerWidth, theme: inner.theme } });
+            if (inner.theme) setTheme(inner.theme);
           } else if (Array.isArray(config)) {
             dispatch({ type: 'LOAD_CONFIG', payload: config });
           }
@@ -245,7 +250,7 @@ function EditorShell() {
 
     setSaving(true);
     try {
-      const configPayload = { sections: state.sections, containerWidth: state.containerWidth };
+      const configPayload = { sections: state.sections, containerWidth: state.containerWidth, theme };
       await saveConfig(domain, id, [configPayload] as any, status);
       setConfigStatus(status);
       if (!configId) {
@@ -273,6 +278,7 @@ function EditorShell() {
 
   function handlePreview() {
     sessionStorage.setItem('mjs-preview-config', JSON.stringify(state.tree));
+    sessionStorage.setItem('mjs-preview-theme', theme);
     const params = new URLSearchParams({ domain });
     if (configId) params.set('id', configId);
     window.open(`/preview?${params.toString()}`, '_blank');
@@ -437,6 +443,9 @@ function EditorShell() {
           >
             {saving ? '...' : 'Publish'}
           </button>
+          <button className="btn-toolbar" onClick={() => setSnippetOpen(true)} title="Get embed code snippet">
+            &lt;/&gt; Snippet
+          </button>
           <button className="btn-toolbar btn-toolbar-accent" onClick={handlePreview}>
             Preview &#x2197;
           </button>
@@ -582,6 +591,13 @@ function EditorShell() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <CodeSnippetModal
+          open={snippetOpen}
+          onClose={() => setSnippetOpen(false)}
+          configId={configId}
+          domain={domain}
+        />
       </div>
 
       <DragOverlay>
@@ -594,13 +610,13 @@ function EditorShell() {
               alignItems: 'center',
               gap: 8,
               padding: '10px 16px',
-              background: '#fff',
-              border: '2px solid var(--color-primary, #3b82f6)',
+              background: 'var(--color-surface)',
+              border: '2px solid var(--color-primary)',
               borderRadius: 12,
               boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
               fontSize: 13,
               fontWeight: 600,
-              color: '#1e293b',
+              color: 'var(--color-text)',
             }}
           >
             <span>{draggedDef.icon}</span>
@@ -614,8 +630,10 @@ function EditorShell() {
 
 export function App() {
   return (
-    <EditorProvider>
-      <EditorShell />
-    </EditorProvider>
+    <ThemeProvider>
+      <EditorProvider>
+        <EditorShell />
+      </EditorProvider>
+    </ThemeProvider>
   );
 }

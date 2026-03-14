@@ -186,7 +186,7 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
                       padding: '5px 6px', cursor: 'pointer', borderRadius: 4,
                       transition: 'background 0.1s',
                     }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.7)')}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                       <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{feat.label}</span>
@@ -263,11 +263,11 @@ export function ConfigForm({ onClose }: { onClose?: () => void }) {
         <FormSection label="Title Text">
           <input
             type="text"
-                value={option.titleText ?? ''}
-                placeholder={def.label}
+            value={option.titleText ?? ''}
+            placeholder={def.label}
             onChange={(e) => updateOption('titleText', e.target.value)}
-                className="input"
-                style={{ fontSize: 12 }}
+            className="input"
+            style={{ fontSize: 12 }}
           />
         </FormSection>
         <StyleEditor
@@ -356,7 +356,7 @@ function CollapsibleSection({ title, icon, defaultOpen, count, children }: {
           width: '100%', display: 'flex', alignItems: 'center', gap: 6,
           padding: '8px 10px', fontSize: 11, fontWeight: 600,
           color: 'var(--color-text-secondary)',
-          background: open ? 'var(--color-surface-alt)' : '#fff',
+          background: open ? 'var(--color-surface-alt)' : 'var(--color-surface)',
           border: 'none', cursor: 'pointer',
           fontFamily: 'var(--font-sans)',
           transition: 'background 0.15s',
@@ -454,7 +454,7 @@ function OptionFieldInput({ field, value, onChange }: {
                     padding: '3px 10px', fontSize: 11, fontWeight: isSelected ? 600 : 400,
                     borderRadius: 12,
                     border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    background: isSelected ? 'var(--color-primary-light)' : '#fff',
+                    background: isSelected ? 'var(--color-primary-light)' : 'var(--color-surface)',
                     color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
@@ -649,7 +649,7 @@ function BoxModelEditor({ label, prefix, values, onChange, color }: {
         <div style={{
           gridColumn: '2', gridRow: '2',
           width: 44, height: 28,
-          background: '#fff', borderRadius: 4,
+          background: 'var(--color-surface)', borderRadius: 4,
           border: '1px solid var(--color-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 8, fontWeight: 700, color: 'var(--color-text-muted)',
@@ -692,7 +692,7 @@ function BoxInput({ value, onChange, label }: {
           width: 36, textAlign: 'center', padding: '3px 2px',
           fontSize: 11, fontWeight: 600,
           border: '1px solid var(--color-border)',
-          borderRadius: 4, background: '#fff',
+          borderRadius: 4, background: 'var(--color-surface)',
                   outline: 'none',
           fontFamily: 'var(--font-sans)',
         }}
@@ -811,7 +811,7 @@ function ClickActionsSection({ actions, option, selectedId, onChange }: {
                           padding: '3px 8px', fontSize: 10, fontWeight: 600,
                           borderRadius: 10, cursor: 'pointer',
                           border: selected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                          background: selected ? 'var(--color-primary-light)' : '#fff',
+                          background: selected ? 'var(--color-primary-light)' : 'var(--color-surface)',
                           color: selected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                           transition: 'all 0.15s',
                         }}
@@ -969,7 +969,7 @@ function ButtonActionsSection({ actions, option, selectedId, onChange }: {
                               padding: '3px 8px', fontSize: 10, fontWeight: 600,
                               borderRadius: 10, cursor: 'pointer',
                               border: selected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                              background: selected ? 'var(--color-primary-light)' : '#fff',
+                              background: selected ? 'var(--color-primary-light)' : 'var(--color-surface)',
                               color: selected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                               transition: 'all 0.15s',
                             }}
