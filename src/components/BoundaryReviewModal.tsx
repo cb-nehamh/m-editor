@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, Trash2, Loader2 } from 'lucide-react';
+import { X, Check, Trash2 } from 'lucide-react';
 import type { Boundary, Bbox, Selection } from '../services/image-analysis-api';
-import { getSessionImageUrl, submitSelections } from '../services/image-analysis-api';
-import type { SavedEditorConfig } from '../state';
+import { getSessionImageUrl } from '../services/image-analysis-api';
 
 interface BoundaryReviewModalProps {
   sessionId: string;
   boundaries: Boundary[];
   imageWidth: number;
   imageHeight: number;
-  onSubmit: (layoutConfig: SavedEditorConfig) => void;
+  onSubmit: (selections: Selection[]) => void;
   onClose: () => void;
 }
 
@@ -68,8 +67,6 @@ export function BoundaryReviewModal({
     return initial;
   });
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [hoveredBoundary, setHoveredBoundary] = useState<string | null>(null);
   const [displayWidth, setDisplayWidth] = useState(0);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -168,33 +165,22 @@ export function BoundaryReviewModal({
 
   const activeCount = boundaries.filter((b) => !boundaryStates[b.id]?.discarded).length;
 
-  const handleSubmit = useCallback(async () => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const selections: Selection[] = boundaries
-        .filter((b) => !boundaryStates[b.id]?.discarded)
-        .map((b) => {
-          const state = boundaryStates[b.id];
-          const candidate = b.candidates[state.selectedCandidateIdx];
-          return {
-            id: b.id,
-            type: candidate.type,
-            variant: candidate.variant,
-            bbox: bboxOverrides[b.id] ?? b.bbox,
-          };
-        });
-
-      const result = await submitSelections(sessionId, selections);
-      onSubmit({
-        sections: result.layout_config.sections,
+  const handleSubmit = useCallback(() => {
+    const selections: Selection[] = boundaries
+      .filter((b) => !boundaryStates[b.id]?.discarded)
+      .map((b) => {
+        const state = boundaryStates[b.id];
+        const candidate = b.candidates[state.selectedCandidateIdx];
+        return {
+          id: b.id,
+          type: candidate.type,
+          variant: candidate.variant,
+          bbox: bboxOverrides[b.id] ?? b.bbox,
+        };
       });
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate config');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [boundaries, boundaryStates, bboxOverrides, sessionId, onSubmit]);
+
+    onSubmit(selections);
+  }, [boundaries, boundaryStates, bboxOverrides, onSubmit]);
 
   const renderResizeHandles = (boundaryId: string, color: string) => {
     const handles: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
@@ -233,7 +219,7 @@ export function BoundaryReviewModal({
               {' \u2014 drag handles to resize boundaries'}
             </p>
           </div>
-          <button className="boundary-review-close" onClick={onClose} disabled={submitting}>
+          <button className="boundary-review-close" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
@@ -373,28 +359,19 @@ export function BoundaryReviewModal({
 
         {/* Footer */}
         <div className="boundary-review-footer">
-          {error && <div className="boundary-review-error">{error}</div>}
           <div className="boundary-review-actions">
             <button
               className="boundary-cancel-btn"
               onClick={onClose}
-              disabled={submitting}
             >
               Cancel
             </button>
             <button
               className="boundary-submit-btn"
               onClick={handleSubmit}
-              disabled={submitting || activeCount === 0}
+              disabled={activeCount === 0}
             >
-              {submitting ? (
-                <>
-                  <Loader2 size={14} className="spin" />
-                  Generating Config...
-                </>
-              ) : (
-                `Generate Config (${activeCount} component${activeCount !== 1 ? 's' : ''})`
-              )}
+              {`Generate Config (${activeCount} component${activeCount !== 1 ? 's' : ''})`}
             </button>
           </div>
         </div>

@@ -26,7 +26,8 @@ import { CodeSnippetModal } from './components/CodeSnippetModal';
 import { registryMap } from './component-registry';
 import { saveConfig, fetchConfig, saveToChargebeeApp, loadAllChatHistory } from './api';
 import type { AgentMessage } from './services/agent-service';
-import type { Boundary } from './services/image-analysis-api';
+import type { Boundary, Selection } from './services/image-analysis-api';
+import { submitSelections } from './services/image-analysis-api';
 
 interface BoundaryReviewData {
   sessionId: string;
@@ -292,34 +293,57 @@ function EditorShell() {
   );
 
   const handleBoundarySubmit = useCallback(
-    async (layoutConfig: SavedEditorConfig) => {
+    async (selections: Selection[]) => {
+      const sessionId = boundaryReviewData?.sessionId;
+      if (!sessionId) return;
+
       const id = configId || (crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''));
 
-      dispatch({ type: 'LOAD_FULL', payload: { sections: layoutConfig.sections, containerWidth: layoutConfig.containerWidth } });
+      setBoundaryReviewData(null);
+      setAgentProcessing(true);
+      setAgentOverlayStatus('Generating config...');
+      setAgentPhaseIndex(3);
 
       try {
-        const configPayload = { sections: layoutConfig.sections, containerWidth: layoutConfig.containerWidth };
+        const result = await submitSelections(sessionId, selections);
+        const layoutConfig = result.layout_config;
+
+        setAgentOverlayStatus('Loading into editor...');
+        setAgentPhaseIndex(4);
+        dispatch({ type: 'LOAD_FULL', payload: { sections: layoutConfig.sections } });
+
+        setAgentOverlayStatus('Saving draft...');
+        setAgentPhaseIndex(5);
+        const configPayload = { sections: layoutConfig.sections };
         await saveConfig(domain, id, [configPayload] as any, 'draft');
         setConfigStatus('draft');
         if (!configId) {
           setSearchParams({ domain, id, ...(cbId && { cbId }), ...(csrfToken && { csrfToken }), ...(cbOrigin && { cbOrigin }) });
         }
         showToast('Config generated and saved as draft!');
+
+        const successMsg: AgentMessage = {
+          role: 'agent',
+          text: 'Your portal has been generated from the uploaded design! The layout has been saved as a draft. Feel free to customize further using the inspector.',
+          timestamp: Date.now(),
+        };
+        setAgentMessages((prev) => [...prev, successMsg]);
       } catch (err) {
-        console.error('Save failed:', err);
-        showToast('Config loaded but save failed');
+        console.error('Config generation failed:', err);
+        showToast('Config generation failed');
+        const errMsg: AgentMessage = {
+          role: 'agent',
+          text: `Something went wrong while generating the config: ${err}`,
+          timestamp: Date.now(),
+        };
+        setAgentMessages((prev) => [...prev, errMsg]);
+      } finally {
+        setAgentProcessing(false);
+        setAgentOverlayStatus(null);
+        setAgentPhaseIndex(0);
       }
-
-      setBoundaryReviewData(null);
-
-      const successMsg: AgentMessage = {
-        role: 'agent',
-        text: 'Your portal has been generated from the uploaded design! The layout has been saved as a draft. Feel free to customize further using the inspector.',
-        timestamp: Date.now(),
-      };
-      setAgentMessages((prev) => [...prev, successMsg]);
     },
-    [configId, domain, cbId, csrfToken, cbOrigin, dispatch, setSearchParams]
+    [configId, domain, cbId, csrfToken, cbOrigin, dispatch, setSearchParams, boundaryReviewData]
   );
 
   const draggedDef = draggedType ? registryMap.get(draggedType) : null;
@@ -540,7 +564,7 @@ function EditorShell() {
 
         {/* ===== AGENT LOADING OVERLAY ===== */}
         <AnimatePresence>
-          {agentProcessing && agentOverlayStatus && (
+          {agentProcessing && agentOverlayStatus && !boundaryReviewData && (
             <AgentLoadingOverlay
               statusText={agentOverlayStatus}
               phaseIndex={agentPhaseIndex}

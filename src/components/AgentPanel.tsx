@@ -48,7 +48,7 @@ export function AgentPanel({
     saveChatMessage(domain, configId, seq, msg).catch(() => {});
   }, [domain, configId]);
 
-  const handleImageAnalysisFlow = useCallback(async (file: File, text: string) => {
+  const handleImageAnalysisFlow = useCallback(async (file: File, text: string): Promise<boolean> => {
     let phaseIdx = 0;
 
     onStatusChange('Uploading image...', phaseIdx++);
@@ -79,7 +79,7 @@ export function AgentPanel({
         persistMessage(noResultMsg, seq);
         return [...prev, noResultMsg];
       });
-      return;
+      return false;
     }
 
     const detectedMsg: AgentMessage = {
@@ -94,6 +94,7 @@ export function AgentPanel({
     });
 
     onBoundaryReview(session_id, analysis.boundaries, analysis.image_width, analysis.image_height);
+    return true;
   }, [onStatusChange, onBoundaryReview, setMessages, persistMessage]);
 
   const handleSend = useCallback(async () => {
@@ -112,9 +113,11 @@ export function AgentPanel({
     setProcessing(true);
     onProcessingChange(true);
 
+    let boundaryModalOpened = false;
+
     try {
       if (currentFile) {
-        await handleImageAnalysisFlow(currentFile, text);
+        boundaryModalOpened = await handleImageAnalysisFlow(currentFile, text);
       } else {
         const service = createAgentService('demo');
         let phaseIdx = 0;
@@ -161,8 +164,10 @@ export function AgentPanel({
       });
     } finally {
       setProcessing(false);
-      onProcessingChange(false);
-      onStatusChange(null, 0);
+      if (!boundaryModalOpened) {
+        onProcessingChange(false);
+        onStatusChange(null, 0);
+      }
     }
   }, [input, image, imageFile, messages.length, dispatch, onProcessingChange, onStatusChange, persistMessage, setMessages, handleImageAnalysisFlow]);
 

@@ -17,9 +17,9 @@ export interface LayoutDef {
 }
 
 export const LAYOUT_DEFS: LayoutDef[] = [
-  { type: 'fullWidth', label: 'Single Column', regions: ['main'] },
-  { type: 'twoColumn', label: 'Two Columns', regions: ['left', 'right'] },
-  { type: 'sidebar', label: 'Sidebar + Content', regions: ['sidebar', 'content'] },
+  { type: 'fullWidth', label: 'Monopane', regions: ['main'] },
+  { type: 'twoColumn', label: 'Split Pane', regions: ['left', 'right'] },
+  { type: 'sidebar', label: 'Primary Split', regions: ['sidebar', 'content'] },
 ];
 
 export interface LayoutSection {

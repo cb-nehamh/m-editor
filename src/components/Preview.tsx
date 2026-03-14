@@ -168,6 +168,7 @@ function LiveWidget({ node, sectionId, region }: { node: EditorComponent; sectio
     marginBottom: margin.bottom ? `${margin.bottom}px` : '8px',
     marginLeft: margin.left ? `${margin.left}px` : undefined,
     width: '100%',
+    minWidth: 0,
     transition: sortTransition ?? 'margin 0.2s ease',
     transform: CSS.Transform.toString(transform),
     opacity: isDragging ? 0.5 : 1,
@@ -276,6 +277,7 @@ function SectionPreview({ section, index }: { section: LayoutSection; index: num
         <div style={{
           display: 'grid', gridTemplateColumns: gridColumns,
           gap: 12, minHeight: 100,
+          overflow: 'hidden',
         }}>
           {layoutDef.regions.map((region) => {
             const comps = section.regionComponents[region] ?? [];
